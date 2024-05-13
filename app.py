@@ -1,11 +1,11 @@
 import gradio as gr
 
-from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT
+from src.assets.text_content import TITLE, INTRODUCTION_TEXT
 from src.leaderboard_utils import filter_search, get_github_data
 from src.plot_utils import split_models, compare_plots
+from src.ranking_utils import get_rankings
 
 # For Leaderboards
-dataframe_height = 800 # Height of the table in pixels
 # Get CSV data
 global primary_leaderboard_df, version_dfs, version_names
 primary_leaderboard_df, version_dfs, version_names = get_github_data()
@@ -39,22 +39,19 @@ with main_app:
                     elem_id="search-bar",
                 )
                                     
-            leaderboard_table = gr.Dataframe(
+            leaderboard_table = gr.components.Dataframe(
                 value=primary_leaderboard_df[0],
                 elem_id="leaderboard-table",
                 interactive=False,
                 visible=True,
-                height=dataframe_height
             )
 
-            gr.HTML(CLEMSCORE_TEXT)
-
             # Add a dummy leaderboard to handle search queries from the primary_leaderboard_df and not update primary_leaderboard_df
-            dummy_leaderboard_table = gr.Dataframe(
+            dummy_leaderboard_table = gr.components.Dataframe(
                 value=primary_leaderboard_df[0],
                 elem_id="leaderboard-table",
                 interactive=False,
-                visible=False
+                visible=False,
             )
                 
             search_bar.submit(
@@ -110,14 +107,6 @@ with main_app:
                         elem_id="value-select-5",
                         interactive=True,
                     ) 
-                with gr.Column():
-                    mobile_view = gr.CheckboxGroup(
-                        ["Mobile View"],
-                        label ="View plot on smaller screens 📱",
-                        value=[],
-                        elem_id="value-select-6",
-                        interactive=True,
-                    ) 
 
             with gr.Row():
                 dummy_plot_df = gr.DataFrame(
@@ -132,42 +121,35 @@ with main_app:
 
             open_models_selection.change(
                 compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend, mobile_view],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend],
                 plot_output,
                 queue=True
             )
 
             closed_models_selection.change(
                 compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend, mobile_view],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend],
                 plot_output,
                 queue=True
             )
             
             show_all.change(
                 compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend, mobile_view],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend],
                 plot_output,
                 queue=True
             )
 
             show_names.change(
                 compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend, mobile_view],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend],
                 plot_output,
                 queue=True
             )
 
             show_legend.change(
                 compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend, mobile_view],
-                plot_output,
-                queue=True
-            )
-
-            mobile_view.change(
-                compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend, mobile_view],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend],
                 plot_output,
                 queue=True
             )
@@ -184,19 +166,18 @@ with main_app:
                     elem_id="search-bar-2",
                 )
 
-            prev_table = gr.Dataframe(
+            prev_table = gr.components.Dataframe(
                 value=prev_df,
                 elem_id="leaderboard-table",
                 interactive=False,
                 visible=True,
-                height=dataframe_height
             )
 
-            dummy_prev_table = gr.Dataframe(
+            dummy_prev_table = gr.components.Dataframe(
                 value=prev_df,
                 elem_id="leaderboard-table",
                 interactive=False,
-                visible=False
+                visible=False,
             )
 
             search_bar_prev.submit(
@@ -212,6 +193,37 @@ with main_app:
                 prev_table,
                 queue=True
             )
+
+        # with gr.TabItem("Ranking Comparison", elem_id="rankings", id=4):
+        #     with gr.Row():
+        #         search_bar_rank = gr.Textbox(
+        #             placeholder=" 🔍 Search for models - separate multiple queries with `;` and press ENTER...",
+        #             show_label=False,
+        #             elem_id="search-bar-3",
+        #         )
+
+        #     with gr.Row():
+        #         ranking_table = gr.components.Dataframe(
+        #             value=get_rankings(),
+        #             elem_id="rankings-table",
+        #             interactive=False,
+        #             visible=True,
+        #         )
+
+        #         dummy_ranking_table = gr.components.Dataframe(
+        #             value=get_rankings(),
+        #             elem_id="rankings-table",
+        #             interactive=False,
+        #             visible=False,
+        #         )
+
+        #     search_bar_rank.submit(
+        #         filter_search,
+        #         [dummy_prev_table, search_bar_prev],
+        #         prev_table,
+        #         queue=True
+        #     )
+
     main_app.load()
 
 main_app.queue()
