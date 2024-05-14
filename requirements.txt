@@ -4,3 +4,4 @@ plotly==5.18.0
 beautifulsoup4==4.12.3
 selenium==4.19.0
 datasets==2.19.1
+scipy==1.13.0
