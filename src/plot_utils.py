@@ -3,7 +3,7 @@ import plotly.express as px
 
 from src.assets.text_content import SHORT_NAMES
 
-def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list, LEGEND:list, MOBILE:list ):
+def plotly_plot(df:pd.DataFrame, LIST1:list, LIST2:list, ALL:list, NAMES:list, LEGEND:list, MOBILE:list ):
     '''
     Takes in a list of models for a plotly plot
     Args:
@@ -16,6 +16,7 @@ def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list, LEGEND:list, M
     Returns:
         Fig: plotly figure
     '''
+    LIST = LIST1 + LIST2 #Combine Open + Commercial models list
     
     # Get list of all models and append short names column to df
     list_columns = list(df.columns)

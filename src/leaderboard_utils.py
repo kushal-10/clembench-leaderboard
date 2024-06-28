@@ -15,15 +15,15 @@ def get_github_data():
         all_dfs: list of dataframes for previous versions + latest version including columns for all games
         all_vnames: list of the names for the previous versions + latest version (For Details and Versions Tab Dropdown)
     """
-    uname = "clembench"
+    uname = "kushal-10"
     repo = "clembench-runs"
-    json_url = f"https://raw.githubusercontent.com/{uname}/{repo}/main/benchmark_runs.json"
+    json_url = f"https://raw.githubusercontent.com/{uname}/{repo}/check/website/benchmark_runs.json"
     resp = requests.get(json_url)
     if resp.status_code == 200:
         json_data = json.loads(resp.text)
         versions = json_data['versions']
         version_names = []
-        csv_url = f"https://raw.githubusercontent.com/{uname}/{repo}/main/"
+        csv_url = f"https://raw.githubusercontent.com/{uname}/{repo}/check/website/"
         for ver in versions:
             version_names.append(ver['version'])
             csv_path = ver['result_file'].split('/')[1:]
@@ -65,8 +65,9 @@ def get_github_data():
         for df, name in zip(DFS, version_names):
             all_dfs.append(df)
             all_vnames.append(name) 
-        return latest_df, all_dfs, all_vnames, date
-    
+        return latest_df, all_dfs, all_vnames
+
+
     else:
         print(f"Failed to read JSON file: Status Code : {resp.status_code}")
 
@@ -118,7 +119,7 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def filter_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
+def filter_query(df: pd.DataFrame, query: str) -> pd.DataFrame:
     """
     Filter the dataframe based on the search query
     Args:
