@@ -15,40 +15,38 @@ def get_github_data():
         all_dfs: list of dataframes for previous versions + latest version including columns for all games
         all_vnames: list of the names for the previous versions + latest version (For Details and Versions Tab Dropdown)
     """
-    uname = "clembench"
+    base_repo = "https://raw.githubusercontent.com/kushal-10/clembench-runs/check/website/"
+    uname = "kushal-10"
     repo = "clembench-runs"
-    json_url = f"https://raw.githubusercontent.com/{uname}/{repo}/main/benchmark_runs.json"
+    json_url = base_repo + "benchmark_runs.json"
     resp = requests.get(json_url)
     if resp.status_code == 200:
         json_data = json.loads(resp.text)
         versions = json_data['versions']
         version_names = []
-        csv_url = f"https://raw.githubusercontent.com/{uname}/{repo}/main/"
         for ver in versions:
             version_names.append(ver['version'])
-            csv_path = ver['result_file'].split('/')[1:]
-            csv_path = '/'.join(csv_path)
-        
+
         # Sort by latest version
         float_content = [float(s[1:]) for s in version_names]
         float_content.sort(reverse=True)
-        version_names = ['v'+str(s) for s in float_content]
+        version_names = ['v' + str(s) for s in float_content]
 
         # Get date of latest version
         for data in versions:
             if data['version'] == version_names[0]:
-                date = data['date'] # Should be in YYYY/MM/DD format
+                date = data['date']  # Should be in YYYY/MM/DD format
                 date_obj = datetime.strptime(date, "%Y/%m/%d")
                 date = date_obj.strftime("%d %b %Y")
 
         DFS = []
         for version in version_names:
-            result_url = csv_url+ version + '/' + csv_path
+            result_url = base_repo + version + '/results.csv'
             csv_response = requests.get(result_url)
             if csv_response.status_code == 200:
                 df = pd.read_csv(StringIO(csv_response.text))
                 df = process_df(df)
-                df = df.sort_values(by=list(df.columns)[1], ascending=False) # Sort by clemscore
+                df = df.sort_values(by=list(df.columns)[1], ascending=False)  # Sort by clemscore
                 DFS.append(df)
             else:
                 print(f"Failed to read CSV file for version : {version}. Status Code : {resp.status_code}")
@@ -64,9 +62,10 @@ def get_github_data():
         all_vnames = []
         for df, name in zip(DFS, version_names):
             all_dfs.append(df)
-            all_vnames.append(name) 
+            all_vnames.append(name)
         return latest_df, all_dfs, all_vnames, date
-    
+
+
     else:
         print(f"Failed to read JSON file: Status Code : {resp.status_code}")
 

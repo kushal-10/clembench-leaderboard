@@ -1,3 +1,5 @@
 gradio==4.36.1
 pandas==2.0.0
 plotly==5.18.0
+apscheduler==3.10.4
+huggingfce_hub==0.23.4

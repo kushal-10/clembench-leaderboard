@@ -1,9 +1,15 @@
 import gradio as gr
+import os
+from apscheduler.schedulers.background import BackgroundScheduler
+from huggingface_hub import HfApi
+from datetime import datetime, timedelta
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT
 from src.leaderboard_utils import filter_search, get_github_data
 from src.plot_utils import split_models, compare_plots
 
+# For restarting
+TIME = 200  # Seconds to restart the application on Gradio # Will not work locally
 # For Leaderboards
 dataframe_height = 800 # Height of the table in pixels
 # Get CSV data
@@ -17,6 +23,16 @@ def select_prev_df(name):
     prev_df = version_dfs[ind]
     return prev_df
 
+# API for auto restart
+HF_TOKEN = os.environ.get("H4_TOKEN", None)
+api = HfApi()
+
+
+def restart_space():
+    api.restart_space(repo_id="Koshti10/leaderboard", token=HF_TOKEN)
+
+
+
 # For Plots 
 global plot_df, OPEN_MODELS, CLOSED_MODELS
 plot_df = primary_leaderboard_df[0]
@@ -24,7 +40,7 @@ MODELS = list(plot_df[list(plot_df.columns)[0]].unique())
 OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
 
 
-# MAIN APPLICATION s
+# MAIN APPLICATION
 main_app = gr.Blocks()
 with main_app:
     gr.HTML(TITLE)
@@ -216,5 +232,14 @@ with main_app:
     main_app.load()
 
 main_app.queue()
+
+# Add scheduler to auto-restart the HF space at every TIME interval and update every component each time
+scheduler = BackgroundScheduler()
+scheduler.add_job(restart_space, 'interval', seconds=TIME)
+scheduler.start()
+
+# Log current start time and scheduled restart time
+print(datetime.now())
+print(f"Scheduled restart at {datetime.now() + timedelta(seconds=TIME)}")
 
 main_app.launch()
