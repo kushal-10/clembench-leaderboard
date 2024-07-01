@@ -1,73 +1,67 @@
 import os
 import pandas as pd
-import requests, json
+import requests
+import json
 from io import StringIO
 from datetime import datetime
 
 
 def get_github_data():
     """
-    Get data from csv files on Github
-    Args:
-        None
+    Read and process data from CSV files hosted on GitHub. - https://github.com/clembench/clembench-runs
+
     Returns:
-        latest_df: singular list containing dataframe of the latest version of the leaderboard with only 4 columns
-        all_dfs: list of dataframes for previous versions + latest version including columns for all games
-        all_vnames: list of the names for the previous versions + latest version (For Details and Versions Tab Dropdown)
+        github_data (dict): Dictionary with one key "text" containing a list of DataFrames for each version's leaderboard data,
+                                 sorted by a ranking column (e.g., clemscore).
+        formatted_date (str): Formatted date of the latest version in "DD Month YYYY" format.
     """
     base_repo = "https://raw.githubusercontent.com/kushal-10/clembench-runs/check/website/"
-    uname = "kushal-10"
-    repo = "clembench-runs"
     json_url = base_repo + "benchmark_runs.json"
-    resp = requests.get(json_url)
-    if resp.status_code == 200:
-        json_data = json.loads(resp.text)
-        versions = json_data['versions']
-        version_names = []
-        for ver in versions:
-            version_names.append(ver['version'])
+    response = requests.get(json_url)
 
-        # Sort by latest version
-        float_content = [float(s[1:]) for s in version_names]
-        float_content.sort(reverse=True)
-        version_names = ['v' + str(s) for s in float_content]
+    # Check if the JSON file request was successful
+    if response.status_code != 200:
+        print(f"Failed to read JSON file: Status Code: {response.status_code}")
+        return None, None, None, None
 
-        # Get date of latest version
-        for data in versions:
-            if data['version'] == version_names[0]:
-                date = data['date']  # Should be in YYYY/MM/DD format
-                date_obj = datetime.strptime(date, "%Y/%m/%d")
-                date = date_obj.strftime("%d %b %Y")
+    json_data = response.json()
+    versions = json_data['versions']
 
-        DFS = []
-        for version in version_names:
-            result_url = base_repo + version + '/results.csv'
-            csv_response = requests.get(result_url)
-            if csv_response.status_code == 200:
-                df = pd.read_csv(StringIO(csv_response.text))
-                df = process_df(df)
-                df = df.sort_values(by=list(df.columns)[1], ascending=False)  # Sort by clemscore
-                DFS.append(df)
-            else:
-                print(f"Failed to read CSV file for version : {version}. Status Code : {resp.status_code}")
+    # Sort version names - latest first
+    version_names = sorted(
+        [ver['version'] for ver in versions],
+        key=lambda v: float(v[1:]),
+        reverse=True
+    )
+    print(f"Found {len(version_names)} versions from get_github_data(): {version_names}.")
 
-        # Only keep relevant columns for the main leaderboard
-        latest_df_dummy = DFS[0]
-        all_columns = list(latest_df_dummy.columns)
-        keep_columns = all_columns[0:4]
-        latest_df_dummy = latest_df_dummy.drop(columns=[c for c in all_columns if c not in keep_columns])
+    # Get Last updated date of the latest version
+    latest_version = version_names[0]
+    latest_date = next(
+        ver['date'] for ver in versions if ver['version'] == latest_version
+    )
+    formatted_date = datetime.strptime(latest_date, "%Y/%m/%d").strftime("%d %b %Y")
 
-        latest_df = [latest_df_dummy]
-        all_dfs = []
-        all_vnames = []
-        for df, name in zip(DFS, version_names):
-            all_dfs.append(df)
-            all_vnames.append(name)
-        return latest_df, all_dfs, all_vnames, date
+    # Get Leaderboard data - for text-only + multimodal
+    github_data = {}
 
+    # Text only data
+    text_dfs = []
+    for version in version_names:
+        csv_url = f"{base_repo}{version}/results.csv"
+        csv_response = requests.get(csv_url)
+        if csv_response.status_code == 200:
+            df = pd.read_csv(StringIO(csv_response.text))
+            df = process_df(df)  # Process the DataFrame with custom function
+            df = df.sort_values(by=df.columns[1], ascending=False)  # Sort by clemscore column
+            text_dfs.append(df)
+        else:
+            print(f"Failed to read CSV file for version: {version}. Status Code: {csv_response.status_code}")
 
-    else:
-        print(f"Failed to read JSON file: Status Code : {resp.status_code}")
+    github_data["text"] = text_dfs
+    github_data["date"] = formatted_date
+
+    return github_data
 
 
 def process_df(df: pd.DataFrame) -> pd.DataFrame:
