@@ -1,7 +1,7 @@
 import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT
-from src.leaderboard_utils import filter_search, get_github_data
+from src.leaderboard_utils import query_search, get_github_data
 
 """ 
 CONSTANTS
@@ -59,7 +59,7 @@ with hf_app:
 
             # Action after submitting a query to the search bar
             search_bar.submit(
-                filter_search,
+                query_search,
                 [dummy_leaderboard_table, search_bar],
                 leaderboard_table,
                 queue=True

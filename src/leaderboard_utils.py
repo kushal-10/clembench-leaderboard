@@ -52,7 +52,7 @@ def get_github_data():
         csv_response = requests.get(csv_url)
         if csv_response.status_code == 200:
             df = pd.read_csv(StringIO(csv_response.text))
-            df = process_df(df)  # Process the DataFrame with custom function
+            df = process_df(df)
             df = df.sort_values(by=df.columns[1], ascending=False)  # Sort by clemscore column
             text_dfs.append(df)
         else:
@@ -66,76 +66,56 @@ def get_github_data():
 
 def process_df(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Process dataframe
-    - Remove repition in model names
-    - Convert datatypes to sort by "float" instead of "str" for sorting
+    Process dataframe:
+    - Convert datatypes to sort by "float" instead of "str"
+    - Remove repetition in model names
     - Update column names
+
     Args:
         df: Unprocessed Dataframe (after using update_cols)
+
     Returns:
         df: Processed Dataframe
     """
 
-    # Change column type to float from str
-    list_column_names = list(df.columns)
-    model_col_name = list_column_names[0]
-    for col in list_column_names:
-        if col != model_col_name:
-            df[col] = df[col].astype(float)
+    # Convert column values to float, apart from the model names column
+    for col in df.columns[1:]:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Remove repetition in model names, if any
-    models_list = []
-    for i in range(len(df)):
-        model_name = df.iloc[i][model_col_name]
-        splits = model_name.split('--')
-        splits = [split.replace('-t0.0', '') for split in splits] # Comment to not remove -t0.0
-        if splits[0] == splits[1]:
-            models_list.append(splits[0])
-        else:
-            models_list.append(splits[0] + "--" + splits[1])
-    df[model_col_name] = models_list
+    # Remove repetition in model names
+    df[df.columns[0]] = df[df.columns[0]].str.replace('-t0.0', '', regex=True)
+    df[df.columns[0]] = df[df.columns[0]].apply(lambda x: '--'.join(set(x.split('--'))))
 
     # Update column names
-    update = ['Model', 'Clemscore', '% Played', 'Quality Score']
-    game_metrics = list_column_names[4:]
+    custom_column_names = ['Model', 'Clemscore', '% Played', 'Quality Score']
+    for i, col in enumerate(df.columns[4:]):  # Start Capitalizing from the 5th column
+        parts = col.split(',')
+        custom_name = f"{parts[0].strip().capitalize()} {parts[1].strip()}"
+        custom_column_names.append(custom_name)
 
-    for col in game_metrics:
-        splits = col.split(',')
-        update.append(splits[0].capitalize() + "" + splits[1])
-    
-    map_cols = {}
-    for i in range(len(update)):
-        map_cols[list_column_names[i]] = str(update[i])
+    # Rename columns
+    df.columns = custom_column_names
 
-    df = df.rename(columns=map_cols)    
+    print(df.columns)
     return df
 
 
-def filter_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
+def query_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
     """
-    Filter the dataframe based on the search query
+    Filter the dataframe based on the search query.
+
     Args:
-        df: Unfiltered dataframe
-        query: a string of queries separated by ";"
-    Return:
-        filtered_df: Dataframe containing searched queries in the 'Model' column
+        df (pd.DataFrame): Unfiltered dataframe.
+        query (str): A string of queries separated by ";".
+    Returns:
+        pd.DataFrame: Filtered dataframe containing searched queries in the 'Model' column.
     """
-    queries = query.split(';')
-    list_cols = list(df.columns)
-    df_len = len(df)
-    filtered_models = []
-    models_list = list(df[list_cols[0]])
-    for q in queries:
-        q = q.lower()
-        q = q.strip()
-        for i in range(df_len):
-            model_name = models_list[i]
-            if q in model_name.lower():
-                filtered_models.append(model_name) # Append model names containing query q
-
-    filtered_df = df[df[list_cols[0]].isin(filtered_models)]
-
-    if query == "":
+    if not query.strip():  # Reset Dataframe if empty query is passed
         return df
+
+    queries = [q.strip().lower() for q in query.split(';') if q.strip()]  # Normalize and split queries
+
+    # Filter dataframe based on queries in 'Model' column
+    filtered_df = df[df['Model'].str.lower().str.contains('|'.join(queries))]
 
     return filtered_df
