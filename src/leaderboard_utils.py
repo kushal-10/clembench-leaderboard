@@ -11,9 +11,10 @@ def get_github_data():
     Read and process data from CSV files hosted on GitHub. - https://github.com/clembench/clembench-runs
 
     Returns:
-        github_data (dict): Dictionary with one key "text" containing a list of DataFrames for each version's leaderboard data,
-                                 sorted by a ranking column (e.g., clemscore).
-        formatted_date (str): Formatted date of the latest version in "DD Month YYYY" format.
+        github_data (dict): Dictionary containing:
+            - "text": List of DataFrames for each version's textual leaderboard data.
+            - "multimodal": List of DataFrames for each version's multimodal leaderboard data.
+            - "date": Formatted date of the latest version in "DD Month YYYY" format.
     """
     base_repo = "https://raw.githubusercontent.com/kushal-10/clembench-runs/check/website/"
     json_url = base_repo + "benchmark_runs.json"
@@ -45,20 +46,37 @@ def get_github_data():
     # Get Leaderboard data - for text-only + multimodal
     github_data = {}
 
-    # Text only data
+    # Collect Dataframes
     text_dfs = []
+    mm_dfs = []
+
     for version in version_names:
-        csv_url = f"{base_repo}{version}/results.csv"
-        csv_response = requests.get(csv_url)
+        # Collect CSV data in descending order of clembench-runs versions
+        # Collect Text-only data
+        text_url = f"{base_repo}{version}/results.csv"
+        csv_response = requests.get(text_url)
         if csv_response.status_code == 200:
             df = pd.read_csv(StringIO(csv_response.text))
             df = process_df(df)
             df = df.sort_values(by=df.columns[1], ascending=False)  # Sort by clemscore column
             text_dfs.append(df)
         else:
-            print(f"Failed to read CSV file for version: {version}. Status Code: {csv_response.status_code}")
+            print(f"Failed to read Text-only leaderboard CSV file for version: {version}. Status Code: {csv_response.status_code}")
+
+        # Collect Multimodal data
+        if float(version[1:]) >= 1.6:
+            mm_url = f"{base_repo}{version}_multimodal/results.csv"
+            mm_response = requests.get(mm_url)
+            if mm_response.status_code == 200:
+                df = pd.read_csv(StringIO(mm_response.text))
+                df = process_df(df)
+                df = df.sort_values(by=df.columns[1], ascending=False) # Sort by clemscore column
+                mm_dfs.append(df)
+        else:
+            print(f"Failed to read multimodal leaderboard CSV file for version: {version}: Status Code: {csv_response.status_code}. Please ignore this message if multimodal results are not available for this version")
 
     github_data["text"] = text_dfs
+    github_data["multimodal"] = mm_dfs
     github_data["date"] = formatted_date
 
     return github_data
@@ -96,7 +114,6 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     # Rename columns
     df.columns = custom_column_names
 
-    print(df.columns)
     return df
 
 

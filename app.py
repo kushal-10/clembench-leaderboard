@@ -11,13 +11,26 @@ TIME = 200  # in seconds # Reload will not work locally - requires HFToken # The
 # For Leaderboard table
 dataframe_height = 800  # Height of the table in pixels # Set on average considering all possible devices
 
+
 """
-GitHub Utils
+GITHUB UTILS
 """
 github_data = get_github_data()
-latest_leaderboard = github_data["text"][0]
-latest_leaderboard = latest_leaderboard.iloc[:, :4]  # Show only First 4 columns of the dataframe
-print(f"Showing the following columns for the latest leaderboard: {latest_leaderboard.columns[:4]}")
+text_leaderboard = github_data["text"][0]  # Get the text-only leaderboard for its available latest version
+multimodal_leaderboard = github_data["multimodal"][0]  # Get multimodal leaderboard for its available latest version.
+
+# Show only First 4 columns for the leaderboards
+text_leaderboard = text_leaderboard.iloc[:, :4]
+print(f"Showing the following columns for the latest leaderboard: {text_leaderboard.columns}")
+multimodal_leaderboard = multimodal_leaderboard.iloc[:, :4]
+print(f"Showing the following columns for the multimodal leaderboard: {multimodal_leaderboard.columns}")
+
+
+"""
+PLOT UTILS
+"""
+
+
 
 """
 MAIN APPLICATION
@@ -28,6 +41,9 @@ with hf_app:
     gr.Markdown(INTRODUCTION_TEXT, elem_classes="markdown-text")
 
     with gr.Tabs(elem_classes="tab-buttons") as tabs:
+        """
+        FIRST TAB - TEXT-LEADERBOARD
+        """
         with gr.TabItem("🥇 CLEM Leaderboard", elem_id="llm-benchmark-tab-table", id=0):
             with gr.Row():
                 search_bar = gr.Textbox(
@@ -37,8 +53,8 @@ with hf_app:
                 )
 
             leaderboard_table = gr.Dataframe(
-                value=latest_leaderboard,
-                elem_id="leaderboard-table",
+                value=text_leaderboard,
+                elem_id="text-leaderboard-table",
                 interactive=False,
                 visible=True,
                 height=dataframe_height
@@ -51,8 +67,8 @@ with hf_app:
             # Add a dummy leaderboard to handle search queries in leaderboard_table
             # This will show a temporary leaderboard based on the searched value
             dummy_leaderboard_table = gr.Dataframe(
-                value=latest_leaderboard,
-                elem_id="leaderboard-table",
+                value=text_leaderboard,
+                elem_id="text-leaderboard-table-dummy",
                 interactive=False,
                 visible=False
             )
@@ -64,6 +80,49 @@ with hf_app:
                 leaderboard_table,
                 queue=True
             )
+
+        """
+        SECOND TAB - MULTIMODAL LEADERBOARD
+        """
+        with gr.TabItem("🥇 Multimodal CLEM Leaderboard", elem_id="mm-llm-benchmark-tab-table", id=1):
+            with gr.Row():
+                mm_search_bar = gr.Textbox(
+                    placeholder=" 🔍 Search for models - separate multiple queries with `;` and press ENTER...",
+                    show_label=False,
+                    elem_id="search-bar",
+                )
+
+            mm_leaderboard_table = gr.Dataframe(
+                value=multimodal_leaderboard,
+                elem_id="mm-leaderboard-table",
+                interactive=False,
+                visible=True,
+                height=dataframe_height
+            )
+
+            # Show information about the clemscore and last updated date below the table
+            gr.HTML(CLEMSCORE_TEXT)
+            gr.HTML(f"Last updated - {github_data['date']}")
+
+            # Add a dummy leaderboard to handle search queries in leaderboard_table
+            # This will show a temporary leaderboard based on the searched value
+            mm_dummy_leaderboard_table = gr.Dataframe(
+                value=multimodal_leaderboard,
+                elem_id="mm-leaderboard-table-dummy",
+                interactive=False,
+                visible=False
+            )
+
+            # Action after submitting a query to the search bar
+            mm_search_bar.submit(
+                query_search,
+                [mm_dummy_leaderboard_table, mm_search_bar],
+                mm_leaderboard_table,
+                queue=True
+            )
+
+        with gr.TabItem("", elem_id="plots", id=2):
+
 
     hf_app.load()
 
