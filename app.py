@@ -39,19 +39,6 @@ OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
 print(OPEN_MODELS, CLOSED_MODELS)
 
 
-def update_selection(df, list_op: list, list_co: list,
-                show_all: list = [], show_names: list = [], show_legend: list = [],
-                mobile_view: list = []):
-    """
-    Abstraction over plotly_plot()
-    Update model selection checkboxes as well
-    """
-
-    fig = plotly_plot(df, list_op, list_co, show_all, show_names, show_legend, mobile_view)
-
-    return fig, show_all
-
-
 """
 MAIN APPLICATION
 """
@@ -152,9 +139,11 @@ with hf_app:
                 open_models_selection = gr.CheckboxGroup(
                     OPEN_MODELS,
                     value=[],
-                    elem_id="value-select",
+                    elem_id="value-select-1",
                     interactive=True,
                 )
+
+                clrbtn1 = gr.ClearButton(open_models_selection)
 
             with gr.Accordion("Select Closed-weight Models 💼", open=False):
                 closed_models_selection = gr.CheckboxGroup(
@@ -163,6 +152,8 @@ with hf_app:
                     elem_id="value-select-2",
                     interactive=True,
                 )
+
+                clrbtn2 = gr.ClearButton(closed_models_selection)
 
             """
             Checkbox group to control the layout of the plot 
@@ -197,44 +188,25 @@ with hf_app:
             CHANGE ACTIONS
             """
             open_models_selection.change(
-                update_selection,
+                plotly_plot,
                 [dummy_plot_df, open_models_selection, closed_models_selection],
                 [plot_output, show_all],
                 queue=True
             )
 
             closed_models_selection.change(
-                update_selection,
+                plotly_plot,
                 [dummy_plot_df, open_models_selection, closed_models_selection],
                 [plot_output, show_all],
                 queue=True
             )
 
             show_all.change(
-                update_selection,
+                plotly_plot,
                 [dummy_plot_df, open_models_selection, closed_models_selection, show_all],
                 [plot_output, show_all],
                 queue=True
             )
-
-            # open_models_selection.change(
-            #     update_show_all,
-            #     [],
-            #     [show_all],
-            #     queue=True
-            # )
-            # closed_models_selection.change(
-            #     update_show_all,
-            #     [],
-            #     [show_all],
-            #     queue=True
-            # )
-            # show_all.change(
-            #     update_selection,
-            #     [show_all],
-            #     [open_models_selection, closed_models_selection],
-            #     queue=True
-            # )
 
     hf_app.load()
 
