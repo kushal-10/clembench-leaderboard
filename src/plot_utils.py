@@ -1,22 +1,29 @@
 import pandas as pd
 import plotly.express as px
+import requests
+import json
 
 from src.assets.text_content import SHORT_NAMES
 
-def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list, LEGEND:list, MOBILE:list ):
-    '''
+
+def plotly_plot(df: pd.DataFrame, list_op: list, list_co: list,
+                show_all: list = [], show_names: list = [], show_legend: list = [],
+                mobile_view: list = []):
+    """
     Takes in a list of models for a plotly plot
     Args:
         df: A dummy dataframe of latest version
-        LIST: List of models to plot
-        ALL: Either [] or ["Show All Models"] - toggle view to plot all models 
-        NAMES: Either [] or ["Show Names"] - toggle view to show model names on plot 
-        LEGEND: Either [] or ["Show Legend"] - toggle view to show legend on plot
-        MOBILE: Either [] or ["Mobile View"] - toggle view to for smaller screens
+        list_op: The list of open source models to show in the plot, updated from frontend
+        list_co: The list of commercial models to show in the plot, updated from frontend
+        show_all: Either [] or ["Show All Models"] - toggle view to plot all models 
+        show_names: Either [] or ["Show Names"] - toggle view to show model names on plot 
+        show_legend: Either [] or ["Show Legend"] - toggle view to show legend on plot
+        mobile_view: Either [] or ["Mobile View"] - toggle view to for smaller screens
     Returns:
-        Fig: plotly figure
-    '''
-    
+        Fig: plotly figure of % played v/s quality score
+    """
+
+    LIST = list_op + list_co
     # Get list of all models and append short names column to df
     list_columns = list(df.columns)
     ALL_LIST = list(df[list_columns[0]].unique())
@@ -24,25 +31,24 @@ def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list, LEGEND:list, M
     list_short_names = list(short_names.values())
     df["Short"] = list_short_names
 
-    if ALL:
+    if show_all:
         LIST = ALL_LIST
     # Filter dataframe based on the provided list of models
     df = df[df[list_columns[0]].isin(LIST)]
-    
 
-    if NAMES:
+    if show_names:
         fig = px.scatter(df, x=list_columns[2], y=list_columns[3], color=list_columns[0], symbol=list_columns[0],
-                 color_discrete_map={"category1": "blue", "category2": "red"},
-                 hover_name=list_columns[0], template="plotly_white", text="Short")
+                         color_discrete_map={"category1": "blue", "category2": "red"},
+                         hover_name=list_columns[0], template="plotly_white", text="Short")
         fig.update_traces(textposition='top center')
     else:
         fig = px.scatter(df, x=list_columns[2], y=list_columns[3], color=list_columns[0], symbol=list_columns[0],
-                    color_discrete_map={"category1": "blue", "category2": "red"},
-                    hover_name=list_columns[0], template="plotly_white")
-        
-    if not LEGEND:
+                         color_discrete_map={"category1": "blue", "category2": "red"},
+                         hover_name=list_columns[0], template="plotly_white")
+
+    if not show_legend:
         fig.update_layout(showlegend=False)
-        
+
     fig.update_layout(
         xaxis_title='% Played',
         yaxis_title='Quality Score',
@@ -53,11 +59,10 @@ def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list, LEGEND:list, M
     fig.update_xaxes(range=[-5, 105])
     fig.update_yaxes(range=[-5, 105])
 
-    if MOBILE:
+    if mobile_view:
         fig.update_layout(height=300)
 
-
-    if MOBILE and LEGEND:
+    if mobile_view and show_legend:
         fig.update_layout(height=450)
         fig.update_layout(legend=dict(
             yanchor="bottom",
@@ -75,28 +80,6 @@ def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list, LEGEND:list, M
     return fig
 
 
-# ['Model', 'Clemscore', 'All(Played)', 'All(Quality Score)']
-def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list, ALL:list, NAMES:list, LEGEND: list, MOBILE: list):
-    '''
-    Quality Score v/s % Played plot by selecting models
-    Args:
-        df: A dummy dataframe of latest version
-        LIST1: The list of open source models to show in the plot, updated from frontend
-        LIST2: The list of commercial models to show in the plot, updated from frontend
-        ALL: Either [] or ["Show All Models"] - toggle view to plot all models 
-        NAMES: Either [] or ["Show Names"] - toggle view to show model names on plot
-        LEGEND: Either [] or ["Show Legend"] - toggle view to show legend on plot 
-        MOBILE: Either [] or ["Mobile View"] - toggle view to for smaller screens
-    Returns:
-        fig: The plot
-    '''
-
-    # Combine lists for Open source and commercial models
-    LIST = LIST1 + LIST2
-    fig = plotly_plot(df, LIST, ALL, NAMES, LEGEND, MOBILE)
-
-    return fig
-    
 def shorten_model_name(full_name):
     # Split the name into parts
     parts = full_name.split('-')
@@ -111,19 +94,20 @@ def shorten_model_name(full_name):
         short_name = '-'.join(short_name_parts)
 
         # Remove any leading or trailing hyphens
-        short_name = full_name[0] + '-'+ short_name.strip('-')
+        short_name = full_name[0] + '-' + short_name.strip('-')
 
     return short_name
 
+
 def label_map(model_list: list) -> dict:
-    '''
+    """
     Generate a map from long names to short names, to plot them in frontend graph
     Define the short names in src/assets/text_content.py
     Args: 
         model_list: A list of long model names
     Returns:
         short_name: A dict from long to short name
-    '''
+    """
     short_names = {}
     for model_name in model_list:
         if model_name in SHORT_NAMES:
@@ -135,20 +119,72 @@ def label_map(model_list: list) -> dict:
         short_names[model_name] = short_name
 
     return short_names
-    
-def split_models(MODEL_LIST: list):
-    '''
-    Split the models into open source and commercial
-    '''
-    open_models = []
-    comm_models = []
 
-    for model in MODEL_LIST:
-        if model.startswith(('gpt-', 'claude-', 'command')):
-            comm_models.append(model)
-        else:
-            open_models.append(model)
+
+def split_models(model_list: list):
+    """
+    Split the models into open source and commercial
+    """
+
+    open_models = []
+    commercial_models = []
+    print(f"Total models as input - {len(model_list)}")
+    open_backends = {"huggingface_local", "huggingface_multimodal", "openai_compatible"}  # Define backends considered as open
+
+    # Load model registry data from main repo
+    model_registry_url = "https://raw.githubusercontent.com/clp-research/clembench/main/backends/model_registry.json"
+    response = requests.get(model_registry_url)
+
+    if response.status_code == 200:
+        json_data = json.loads(response.text)
+        # Classify as Open or Commercial based on the defined backend in the model registry
+        backend_mapping = {}
+
+        for model_name in model_list:
+            model_prefix = model_name.split('-')[0]  # Get the prefix part of the model name
+            for entry in json_data:
+                if entry["model_name"].startswith(model_prefix):
+                    backend = entry["backend"]
+                    # Classify based on backend
+                    if backend in open_backends:
+                        open_models.append(model_name)
+                    else:
+                        commercial_models.append(model_name)
+                    break
+
+    else:
+        print(f"Failed to read JSON file: Status Code : {response.status_code}")
 
     open_models.sort(key=lambda o: o.upper())
-    comm_models.sort(key=lambda c: c.upper())
-    return open_models, comm_models
+    commercial_models.sort(key=lambda c: c.upper())
+
+    # Add missing model from the model_registry
+    if "dolphin-2.5-mixtral-8x7b" in model_list:
+        open_models.append("dolphin-2.5-mixtral-8x7b")
+
+    return open_models, commercial_models
+
+
+if __name__ == '__main__':
+    mm_model_list = ['gpt-4o-2024-05-13', 'gpt-4-1106-vision-preview', 'claude-3-opus-20240229', 'gemini-1.5-pro-latest',
+     'gemini-1.5-flash-latest', 'llava-v1.6-34b-hf', 'llava-v1.6-vicuna-13b-hf', 'idefics-80b-instruct',
+     'llava-1.5-13b-hf', 'idefics-9b-instruct']
+
+    text_model_list = ['vicuna-33b-v1.3', 'gpt-4-0125-preview', 'gpt-4-turbo-2024-04-09', 'claude-3-5-sonnet-20240620',
+     'gpt-4-1106-preview', 'gpt-4-0613', 'gpt-4o-2024-05-13', 'claude-3-opus-20240229', 'gemini-1.5-pro-latest',
+     'Meta-Llama-3-70B-Instruct-hf', 'claude-2.1', 'gemini-1.5-flash-latest', 'claude-3-sonnet-20240229',
+     'Qwen1.5-72B-Chat', 'mistral-large-2402', 'gpt-3.5-turbo-0125', 'gemini-1.0-pro', 'command-r-plus', 'openchat_3.5',
+     'claude-3-haiku-20240307', 'sheep-duck-llama-2-70b-v1.1', 'Meta-Llama-3-8B-Instruct-hf', 'openchat-3.5-1210',
+     'WizardLM-70b-v1.0', 'openchat-3.5-0106', 'Qwen1.5-14B-Chat', 'mistral-medium-2312', 'Qwen1.5-32B-Chat',
+     'codegemma-7b-it', 'dolphin-2.5-mixtral-8x7b', 'CodeLlama-34b-Instruct-hf', 'command-r', 'gemma-1.1-7b-it',
+     'SUS-Chat-34B', 'Mixtral-8x22B-Instruct-v0.1', 'tulu-2-dpo-70b', 'Nous-Hermes-2-Mixtral-8x7B-SFT',
+     'WizardLM-13b-v1.2', 'Mistral-7B-Instruct-v0.2', 'Yi-34B-Chat', 'Mixtral-8x7B-Instruct-v0.1',
+     'Mistral-7B-Instruct-v0.1', 'Yi-1.5-34B-Chat', 'vicuna-13b-v1.5', 'Yi-1.5-6B-Chat', 'Starling-LM-7B-beta',
+     'sheep-duck-llama-2-13b', 'Yi-1.5-9B-Chat', 'gemma-1.1-2b-it', 'Qwen1.5-7B-Chat', 'gemma-7b-it',
+     'llama-2-70b-chat-hf', 'Qwen1.5-0.5B-Chat', 'Qwen1.5-1.8B-Chat']
+
+    om, cm = split_models(mm_model_list)
+    print("Open")
+    print(om)
+    print("Closed")
+    print(cm)

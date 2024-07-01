@@ -2,6 +2,7 @@ import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT
 from src.leaderboard_utils import query_search, get_github_data
+from src.plot_utils import split_models, plotly_plot
 
 """ 
 CONSTANTS
@@ -25,11 +26,30 @@ print(f"Showing the following columns for the latest leaderboard: {text_leaderbo
 multimodal_leaderboard = multimodal_leaderboard.iloc[:, :4]
 print(f"Showing the following columns for the multimodal leaderboard: {multimodal_leaderboard.columns}")
 
+list1 = list(multimodal_leaderboard["Model"])
+list2 = list(text_leaderboard["Model"])
+
 
 """
 PLOT UTILS
 """
+plot_df = text_leaderboard
+MODELS = list(plot_df[list(plot_df.columns)[0]].unique())  # Get list of models
+OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
+print(OPEN_MODELS, CLOSED_MODELS)
 
+
+def update_selection(df, list_op: list, list_co: list,
+                show_all: list = [], show_names: list = [], show_legend: list = [],
+                mobile_view: list = []):
+    """
+    Abstraction over plotly_plot()
+    Update model selection checkboxes as well
+    """
+
+    fig = plotly_plot(df, list_op, list_co, show_all, show_names, show_legend, mobile_view)
+
+    return fig, show_all
 
 
 """
@@ -121,8 +141,100 @@ with hf_app:
                 queue=True
             )
 
-        with gr.TabItem("", elem_id="plots", id=2):
+        """
+        THIRD TAB - PLOTS %PLAYED V/S QUALITY SCORE
+        """
+        with gr.TabItem("📈Plots", elem_id="plots", id=2):
+            """
+            Accordion Groups to select individual models - Hidden by default
+            """
+            with gr.Accordion("Select Open-weight Models 🌐", open=False):
+                open_models_selection = gr.CheckboxGroup(
+                    OPEN_MODELS,
+                    value=[],
+                    elem_id="value-select",
+                    interactive=True,
+                )
 
+            with gr.Accordion("Select Closed-weight Models 💼", open=False):
+                closed_models_selection = gr.CheckboxGroup(
+                    CLOSED_MODELS,
+                    value=[],
+                    elem_id="value-select-2",
+                    interactive=True,
+                )
+
+            """
+            Checkbox group to control the layout of the plot 
+            """
+            with gr.Row():
+                with gr.Column():
+                    show_all = gr.CheckboxGroup(
+                        ["Select All Models"],
+                        label="Show plot for all models 🤖",
+                        value=[],
+                        elem_id="value-select-3",
+                        interactive=True,
+                    )
+
+            """
+            PLOT BLOCK
+            """
+            # Create a dummy DataFrame as an input to the plotly_plot function.
+            # Uses this data to plot the %played v/s quality score
+            with gr.Row():
+                dummy_plot_df = gr.DataFrame(
+                    value=plot_df,
+                    visible=False
+                )
+
+            with gr.Row():
+                with gr.Column():
+                    # Output block for the plot
+                    plot_output = gr.Plot()
+
+            """
+            CHANGE ACTIONS
+            """
+            open_models_selection.change(
+                update_selection,
+                [dummy_plot_df, open_models_selection, closed_models_selection],
+                [plot_output, show_all],
+                queue=True
+            )
+
+            closed_models_selection.change(
+                update_selection,
+                [dummy_plot_df, open_models_selection, closed_models_selection],
+                [plot_output, show_all],
+                queue=True
+            )
+
+            show_all.change(
+                update_selection,
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all],
+                [plot_output, show_all],
+                queue=True
+            )
+
+            # open_models_selection.change(
+            #     update_show_all,
+            #     [],
+            #     [show_all],
+            #     queue=True
+            # )
+            # closed_models_selection.change(
+            #     update_show_all,
+            #     [],
+            #     [show_all],
+            #     queue=True
+            # )
+            # show_all.change(
+            #     update_selection,
+            #     [show_all],
+            #     [open_models_selection, closed_models_selection],
+            #     queue=True
+            # )
 
     hf_app.load()
 
