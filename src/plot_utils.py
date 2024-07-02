@@ -4,13 +4,13 @@ import requests
 import json
 import gradio as gr
 
-from src.assets.text_content import SHORT_NAMES
+from src.assets.text_content import SHORT_NAMES, TEXT_NAME, MULTIMODAL_NAME
 from src.leaderboard_utils import get_github_data
 
 
 def plotly_plot(df: pd.DataFrame, list_op: list, list_co: list,
-                show_all: list = [], show_names: list = [], show_legend: list = [],
-                mobile_view: list = []):
+                show_all: list, show_names: list, show_legend: list,
+                mobile_view: list):
     """
     Takes in a list of models for a plotly plot
     Args:
@@ -131,7 +131,6 @@ def split_models(model_list: list):
 
     open_models = []
     commercial_models = []
-    print(f"Total models as input - {len(model_list)}")
     open_backends = {"huggingface_local", "huggingface_multimodal", "openai_compatible"}  # Define backends considered as open
 
     # Load model registry data from main repo
@@ -167,91 +166,101 @@ def split_models(model_list: list):
 
     return open_models, commercial_models
 
-
-def update_open_models(leaderboard: str = "Text"):
+"""
+Update Functions, for when the leaderboard selection changes
+"""
+def update_open_models(leaderboard: str = TEXT_NAME):
     """
-    Change the list of Open Models based on the leaderboard selected
+    Change the checkbox group of Open Models based on the leaderboard selected
 
+    Args:
+        leaderboard: Selected leaderboard from the frontend [Default - Text Leaderboard]
     Return:
-        open_models: A list of Open Models in the selected leaderboard
+        Updated checkbox group for Open Models, based on the leaderboard selected
     """
     github_data = get_github_data()
-    text_leaderboard = github_data["text"][
-        0]  # Get the text-only leaderboard for its available latest version
-    multimodal_leaderboard = github_data["multimodal"][
-        0]  # Get multimodal leaderboard for its available latest version.
-    if leaderboard == "Text":
-        MODELS = list(text_leaderboard[list(text_leaderboard.columns)[0]].unique())  # Get list of models
-        OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
-        return gr.CheckboxGroup(
-            OPEN_MODELS,
-            value=[],
-            elem_id="value-select-1",
-            interactive=True,
-        )
-    elif leaderboard == "Multimodal":
-        MODELS = list(multimodal_leaderboard[list(multimodal_leaderboard.columns)[0]].unique())
-        OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
-        return gr.CheckboxGroup(
-            OPEN_MODELS,
-            value=[],
-            elem_id="value-select-1",
-            interactive=True,
-        )
-    else:
-        print(f"Invalid leaderboard: {leaderboard}")
+    leaderboard_data = github_data["text" if leaderboard == TEXT_NAME else "multimodal"][0]
+    models = leaderboard_data.iloc[:, 0].unique().tolist()
+    open_models, commercial_models = split_models(models)
+    return gr.CheckboxGroup(
+        open_models,
+        value=[],
+        elem_id="value-select-1",
+        interactive=True,
+    )
 
-
-def update_closed_models(leaderboard: str = "Text"):
+def update_closed_models(leaderboard: str = TEXT_NAME):
     """
-    Change the list of Closed Models based on the leaderboard selected
+    Change the checkbox group of Closed Models based on the leaderboard selected
 
-    Return :
-        closed_models: A list of Closed Models in the selected leaderboard
-    """
-    github_data = get_github_data()
-    text_leaderboard = github_data["text"][
-        0]  # Get the text-only leaderboard for its available latest version
-    multimodal_leaderboard = github_data["multimodal"][
-        0]  # Get multimodal leaderboard for its available latest version.
-    if leaderboard == "Text":
-        MODELS = list(text_leaderboard[list(text_leaderboard.columns)[0]].unique())  # Get list of models
-        OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
-        return gr.CheckboxGroup(
-            CLOSED_MODELS,
-            value=[],
-            elem_id="value-select-2",
-            interactive=True,
-        )
-    elif leaderboard == "Multimodal":
-        MODELS = list(multimodal_leaderboard[list(multimodal_leaderboard.columns)[0]].unique())
-        OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
-        return gr.CheckboxGroup(
-            CLOSED_MODELS,
-            value=[],
-            elem_id="value-select-2",
-            interactive=True,
-        )
-    else:
-        print(f"Invalid leaderboard: {leaderboard}")
-
-
-def get_plot_df(leaderboard: str = "Text"):
-    """
-    Select the leaderboard for the plot
-
+    Args:
+        leaderboard: Selected leaderboard from the frontend [Default - Text Leaderboard]
     Return:
-        plot_df: Return the dataframe for the selected leaderboard
+        Updated checkbox group for Closed Models, based on the leaderboard selected
     """
     github_data = get_github_data()
-    text_leaderboard = github_data["text"][0]  # Get the text-only leaderboard for its available latest version
-    multimodal_leaderboard = github_data["multimodal"][0]  # Get multimodal leaderboard for its available latest version.
-    if leaderboard == "Text":
-        return text_leaderboard
-    elif leaderboard == "Multimodal":
-        return multimodal_leaderboard
-    else:
-        print(f"Invalid leaderboard: {leaderboard}")
+    leaderboard_data = github_data["text" if leaderboard == TEXT_NAME else "multimodal"][0]
+    models = leaderboard_data.iloc[:, 0].unique().tolist()
+    open_models, commercial_models = split_models(models)
+    return gr.CheckboxGroup(
+        commercial_models,
+        value=[],
+        elem_id="value-select-2",
+        interactive=True,
+    )
+
+def get_plot_df(leaderboard: str = TEXT_NAME) -> pd.DataFrame:
+    """
+    Get the DataFrame for plotting based on the selected leaderboard.
+    Args:
+        leaderboard: Selected leaderboard.
+    Returns:
+        DataFrame with model data.
+    """
+    github_data = get_github_data()
+    return github_data["text" if leaderboard == TEXT_NAME else "multimodal"][0]
+
+
+"""
+Reset Functions for when the Leaderboard selection changes
+"""
+def reset_show_all():
+    return gr.CheckboxGroup(
+            ["Select All Models"],
+            label="Show plot for all models 🤖",
+            value=[],
+            elem_id="value-select-3",
+            interactive=True,
+        )
+
+def reset_show_names():
+    return gr.CheckboxGroup(
+        ["Show Names"],
+        label="Show names of models on the plot 🏷️",
+        value=[],
+        elem_id="value-select-4",
+        interactive=True,
+    )
+
+
+def reset_show_legend():
+    return gr.CheckboxGroup(
+        ["Show Legend"],
+        label="Show legend on the plot 💡",
+        value=[],
+        elem_id="value-select-5",
+        interactive=True,
+    )
+
+
+def reset_mobile_view():
+    return gr.CheckboxGroup(
+        ["Mobile View"],
+        label="View plot on smaller screens 📱",
+        value=[],
+        elem_id="value-select-6",
+        interactive=True,
+    )
 
 
 if __name__ == '__main__':

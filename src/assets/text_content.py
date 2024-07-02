@@ -1,5 +1,8 @@
 TITLE = """<h1 align="center" id="space-title"> 🏆 CLEM Leaderboard</h1>"""
 
+TEXT_NAME = "🥇 CLEM Leaderboard"
+MULTIMODAL_NAME = "🥇 Multimodal CLEM Leaderboard"
+
 INTRODUCTION_TEXT = """
 <h6 align="center">
 The CLEM Leaderboard aims to track, rank and evaluate current cLLMs (chat-optimized Large Language Models) with the suggested pronounciation “clems”. 
@@ -52,6 +55,6 @@ SHORT_NAMES = {
     "vicuna-7b-v1.5": "vic-7b-v1.5",
     "vicuna-13b-v1.5": "vic-13b-v1.5",
     "gpt4all-13b-snoozy": "g4a-13b-s",
-    "zephyr-7b-alpha":"z-7b-a",
-    "zephyr-7b-beta":"z-7b-b"
+    "zephyr-7b-alpha": "z-7b-a",
+    "zephyr-7b-beta": "z-7b-b"
 }

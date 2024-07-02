@@ -1,8 +1,9 @@
 import gradio as gr
 
-from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT
+from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT, MULTIMODAL_NAME, TEXT_NAME
 from src.leaderboard_utils import query_search, get_github_data
 from src.plot_utils import split_models, plotly_plot, get_plot_df, update_open_models, update_closed_models
+from src.plot_utils import reset_show_all, reset_show_names, reset_show_legend, reset_mobile_view
 
 """ 
 CONSTANTS
@@ -28,10 +29,6 @@ print(f"Showing the following columns for the multimodal leaderboard: {multimoda
 
 
 """
-PLOT UTILS
-"""
-
-"""
 MAIN APPLICATION
 """
 hf_app = gr.Blocks()
@@ -42,9 +39,9 @@ with hf_app:
 
     with gr.Tabs(elem_classes="tab-buttons") as tabs:
         """
-        FIRST TAB - TEXT-LEADERBOARD
+        #######################        FIRST TAB - TEXT-LEADERBOARD       #######################
         """
-        with gr.TabItem("🥇 CLEM Leaderboard", elem_id="llm-benchmark-tab-table", id=0):
+        with gr.TabItem(TEXT_NAME, elem_id="llm-benchmark-tab-table", id=0):
             with gr.Row():
                 search_bar = gr.Textbox(
                     placeholder=" 🔍 Search for models - separate multiple queries with `;` and press ENTER...",
@@ -82,9 +79,9 @@ with hf_app:
             )
 
         """
-        SECOND TAB - MULTIMODAL LEADERBOARD
+        #######################       SECOND TAB - MULTIMODAL LEADERBOARD     #######################
         """
-        with gr.TabItem("🥇 Multimodal CLEM Leaderboard", elem_id="mm-llm-benchmark-tab-table", id=1):
+        with gr.TabItem(MULTIMODAL_NAME, elem_id="mm-llm-benchmark-tab-table", id=1):
             with gr.Row():
                 mm_search_bar = gr.Textbox(
                     placeholder=" 🔍 Search for models - separate multiple queries with `;` and press ENTER...",
@@ -122,15 +119,16 @@ with hf_app:
             )
 
         """
-        THIRD TAB - PLOTS %PLAYED V/S QUALITY SCORE
+        #######################       THIRD TAB - PLOTS - %PLAYED V/S QUALITY SCORE     #######################
         """
         with gr.TabItem("📈Plots", elem_id="plots", id=2):
             """
-            Radio Select for Text/Multimodal Leaderboard
+            DropDown Select for Text/Multimodal Leaderboard
             """
             leaderboard_selection = gr.Dropdown(
-                choices=["Text", "Multimodal"],
-                value="Text",
+                choices=[TEXT_NAME, MULTIMODAL_NAME],
+                value=TEXT_NAME,
+                label="Select Leaderboard 🎖️🔽",
                 elem_id="value-select-0",
                 interactive=True
             )
@@ -159,6 +157,32 @@ with hf_app:
                         interactive=True,
                     )
 
+                with gr.Column():
+                    show_names = gr.CheckboxGroup(
+                        ["Show Names"],
+                        label="Show names of models on the plot 🏷️",
+                        value=[],
+                        elem_id="value-select-4",
+                        interactive=True,
+                    )
+
+                with gr.Column():
+                    show_legend = gr.CheckboxGroup(
+                        ["Show Legend"],
+                        label="Show legend on the plot 💡",
+                        value=[],
+                        elem_id="value-select-5",
+                        interactive=True,
+                    )
+                with gr.Column():
+                    mobile_view = gr.CheckboxGroup(
+                        ["Mobile View"],
+                        label="View plot on smaller screens 📱",
+                        value=[],
+                        elem_id="value-select-6",
+                        interactive=True,
+                    )
+
             """
             PLOT BLOCK
             """
@@ -181,25 +205,51 @@ with hf_app:
             """
             open_models_selection.change(
                 plotly_plot,
-                [dummy_plot_df, open_models_selection, closed_models_selection],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
+                 mobile_view],
                 [plot_output, show_all],
                 queue=True
             )
 
             closed_models_selection.change(
                 plotly_plot,
-                [dummy_plot_df, open_models_selection, closed_models_selection],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
+                 mobile_view],
                 [plot_output, show_all],
                 queue=True
             )
 
             show_all.change(
                 plotly_plot,
-                [dummy_plot_df, open_models_selection, closed_models_selection, show_all],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
+                 mobile_view],
                 [plot_output, show_all],
                 queue=True
             )
 
+            show_names.change(
+                plotly_plot,
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
+                 mobile_view],
+                [plot_output, show_all],
+                queue=True
+            )
+
+            show_legend.change(
+                plotly_plot,
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
+                 mobile_view],
+                [plot_output, show_all],
+                queue=True
+            )
+
+            mobile_view.change(
+                plotly_plot,
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
+                 mobile_view],
+                [plot_output, show_all],
+                queue=True
+            )
             """
             LEADERBOARD SELECT CHANGE ACTIONS
             Update Checkbox Groups and Dummy DF based on the leaderboard selected
@@ -222,6 +272,31 @@ with hf_app:
                 get_plot_df,
                 [leaderboard_selection],
                 [dummy_plot_df],
+                queue=True
+            )
+
+            ## Implement Feature - Reset Plot when Leaderboard selection changes
+            leaderboard_selection.change(
+                reset_show_all,
+                outputs=[show_all],
+                queue=True
+            )
+
+            leaderboard_selection.change(
+                reset_show_names,
+                outputs=[show_names],
+                queue=True
+            )
+
+            leaderboard_selection.change(
+                reset_show_legend,
+                outputs=[show_legend],
+                queue=True
+            )
+
+            leaderboard_selection.change(
+                reset_mobile_view,
+                outputs=[mobile_view],
                 queue=True
             )
 
