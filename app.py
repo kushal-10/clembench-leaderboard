@@ -1,6 +1,10 @@
 import gradio as gr
+import os
+from apscheduler.schedulers.background import BackgroundScheduler
+from huggingface_hub import HfApi
+from datetime import datetime, timedelta
 
-from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT, MULTIMODAL_NAME, TEXT_NAME
+from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT, MULTIMODAL_NAME, TEXT_NAME, HF_REPO
 from src.leaderboard_utils import query_search, get_github_data
 from src.plot_utils import split_models, plotly_plot, get_plot_df, update_open_models, update_closed_models
 from src.plot_utils import reset_show_all, reset_show_names, reset_show_legend, reset_mobile_view
@@ -9,10 +13,20 @@ from src.version_utils import get_versions_data
 """ 
 CONSTANTS
 """
-# For restarting the gradio application
-TIME = 200  # in seconds # Reload will not work locally - requires HFToken # The app launches locally as expected - only without the reload utility
+# For restarting the gradio application every 24 Hrs
+TIME = 86400  # in seconds # Reload will not work locally - requires HFToken # The app launches locally as expected - only without the reload utility
 # For Leaderboard table
 dataframe_height = 800  # Height of the table in pixels # Set on average considering all possible devices
+
+
+"""
+AUTO RESTART HF SPACE
+"""
+HF_TOKEN = os.environ.get("H4_TOKEN", None)
+api = HfApi()
+
+def restart_space():
+    api.restart_space(repo_id=HF_REPO, token=HF_TOKEN)
 
 
 """
@@ -385,13 +399,13 @@ with hf_app:
     hf_app.load()
 hf_app.queue()
 
-# # Add scheduler to auto-restart the HF space at every TIME interval and update every component each time
-# scheduler = BackgroundScheduler()
-# scheduler.add_job(restart_space, 'interval', seconds=TIME)
-# scheduler.start()
-#
-# # Log current start time and scheduled restart time
-# print(datetime.now())
-# print(f"Scheduled restart at {datetime.now() + timedelta(seconds=TIME)}")
+# Add scheduler to auto-restart the HF space at every TIME interval and update every component each time
+scheduler = BackgroundScheduler()
+scheduler.add_job(restart_space, 'interval', seconds=TIME)
+scheduler.start()
+
+# Log current start time and scheduled restart time
+print(datetime.now())
+print(f"Scheduled restart at {datetime.now() + timedelta(seconds=TIME)}")
 
 hf_app.launch()
