@@ -23,7 +23,6 @@ def plotly_plot(df: pd.DataFrame, list_op: list, list_co: list,
         mobile_view: Either [] or ["Mobile View"] - toggle view to for smaller screens
     Returns:
         Fig: plotly figure of % played v/s quality score
-        show_all: Return the value of show_all; to update during selection change for open/closed model checkboxes
     """
 
     LIST = list_op + list_co
@@ -80,7 +79,7 @@ def plotly_plot(df: pd.DataFrame, list_op: list, list_co: list,
             title="% Played v/s Quality Score"
         )
 
-    return fig, show_all
+    return fig
 
 
 def shorten_model_name(full_name):

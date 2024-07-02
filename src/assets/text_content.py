@@ -1,5 +1,8 @@
 TITLE = """<h1 align="center" id="space-title"> 🏆 CLEM Leaderboard</h1>"""
 
+# REPO = "https://raw.githubusercontent.com/kushal-10/clembench-runs/check/website/"
+REPO = "https://raw.githubusercontent.com/clembench/clembench-runs/main/"
+
 TEXT_NAME = "🥇 CLEM Leaderboard"
 MULTIMODAL_NAME = "🥇 Multimodal CLEM Leaderboard"
 

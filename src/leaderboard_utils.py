@@ -5,6 +5,7 @@ import json
 from io import StringIO
 from datetime import datetime
 
+from src.assets.text_content import REPO
 
 def get_github_data():
     """
@@ -16,7 +17,7 @@ def get_github_data():
             - "multimodal": List of DataFrames for each version's multimodal leaderboard data.
             - "date": Formatted date of the latest version in "DD Month YYYY" format.
     """
-    base_repo = "https://raw.githubusercontent.com/kushal-10/clembench-runs/check/website/"
+    base_repo = REPO
     json_url = base_repo + "benchmark_runs.json"
     response = requests.get(json_url)
 

@@ -4,6 +4,7 @@ from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT, MU
 from src.leaderboard_utils import query_search, get_github_data
 from src.plot_utils import split_models, plotly_plot, get_plot_df, update_open_models, update_closed_models
 from src.plot_utils import reset_show_all, reset_show_names, reset_show_legend, reset_mobile_view
+from src.version_utils import get_versions_data
 
 """ 
 CONSTANTS
@@ -27,6 +28,20 @@ print(f"Showing the following columns for the latest leaderboard: {text_leaderbo
 multimodal_leaderboard = multimodal_leaderboard.iloc[:, :4]
 print(f"Showing the following columns for the multimodal leaderboard: {multimodal_leaderboard.columns}")
 
+
+"""
+VERSIONS UTILS
+"""
+versions_data = get_versions_data()
+latest_version = versions_data['latest']  # Always show latest version in text-only benchmark
+last_updated_date = versions_data['date']
+version_names = list(versions_data.keys())
+version_names = [v for v in version_names if v.startswith("v")]  # Remove "latest" and "date" keys
+
+global version_df
+version_df = versions_data[latest_version]
+def select_version_df(name):
+    return versions_data[name]
 
 """
 MAIN APPLICATION
@@ -121,7 +136,7 @@ with hf_app:
         """
         #######################       THIRD TAB - PLOTS - %PLAYED V/S QUALITY SCORE     #######################
         """
-        with gr.TabItem("📈Plots", elem_id="plots", id=2):
+        with gr.TabItem("📈 Plots", elem_id="plots", id=2):
             """
             DropDown Select for Text/Multimodal Leaderboard
             """
@@ -207,7 +222,7 @@ with hf_app:
                 plotly_plot,
                 [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
                  mobile_view],
-                [plot_output, show_all],
+                [plot_output],
                 queue=True
             )
 
@@ -215,7 +230,7 @@ with hf_app:
                 plotly_plot,
                 [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
                  mobile_view],
-                [plot_output, show_all],
+                [plot_output],
                 queue=True
             )
 
@@ -223,7 +238,7 @@ with hf_app:
                 plotly_plot,
                 [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
                  mobile_view],
-                [plot_output, show_all],
+                [plot_output],
                 queue=True
             )
 
@@ -231,7 +246,7 @@ with hf_app:
                 plotly_plot,
                 [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
                  mobile_view],
-                [plot_output, show_all],
+                [plot_output],
                 queue=True
             )
 
@@ -239,7 +254,7 @@ with hf_app:
                 plotly_plot,
                 [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
                  mobile_view],
-                [plot_output, show_all],
+                [plot_output],
                 queue=True
             )
 
@@ -247,7 +262,7 @@ with hf_app:
                 plotly_plot,
                 [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend,
                  mobile_view],
-                [plot_output, show_all],
+                [plot_output],
                 queue=True
             )
             """
@@ -282,6 +297,18 @@ with hf_app:
                 queue=True
             )
 
+            open_models_selection.change(
+                reset_show_all,
+                outputs=[show_all],
+                queue=True
+            )
+
+            closed_models_selection.change(
+                reset_show_all,
+                outputs=[show_all],
+                queue=True
+            )
+
             leaderboard_selection.change(
                 reset_show_names,
                 outputs=[show_names],
@@ -297,6 +324,61 @@ with hf_app:
             leaderboard_selection.change(
                 reset_mobile_view,
                 outputs=[mobile_view],
+                queue=True
+            )
+
+        """
+        #######################       FOURTH TAB - VERSIONS AND DETAILS     #######################
+        """
+        with gr.TabItem("🔄 Versions and Details", elem_id="versions-details-tab", id=3):
+            with gr.Row():
+                version_select = gr.Dropdown(
+                    version_names, label="Select Version 🕹️", value=latest_version
+                )
+            with gr.Row():
+                search_bar_prev = gr.Textbox(
+                    placeholder=" 🔍 Search for models - separate multiple queries with `;` and press ENTER...",
+                    show_label=False,
+                    elem_id="search-bar-3",
+                )
+
+            prev_table = gr.Dataframe(
+                value=version_df,
+                elem_id="version-leaderboard-table",
+                interactive=False,
+                visible=True,
+                height=dataframe_height
+            )
+
+            dummy_prev_table = gr.Dataframe(
+                value=version_df,
+                elem_id="version-dummy-leaderboard-table",
+                interactive=False,
+                visible=False
+            )
+
+            gr.HTML(CLEMSCORE_TEXT)
+            gr.HTML(f"Last updated - {last_updated_date}")
+
+            search_bar_prev.submit(
+                query_search,
+                [dummy_prev_table, search_bar_prev],
+                prev_table,
+                queue=True
+            )
+
+            version_select.change(
+                select_version_df,
+                [version_select],
+                prev_table,
+                queue=True
+            )
+
+            # Update Dummy Leaderboard, when changing versions
+            version_select.change(
+                select_version_df,
+                [version_select],
+                dummy_prev_table,
                 queue=True
             )
 
