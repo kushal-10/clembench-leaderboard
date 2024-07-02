@@ -2,7 +2,7 @@ import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT
 from src.leaderboard_utils import query_search, get_github_data
-from src.plot_utils import split_models, plotly_plot
+from src.plot_utils import split_models, plotly_plot, get_plot_df, update_open_models, update_closed_models
 
 """ 
 CONSTANTS
@@ -26,24 +26,17 @@ print(f"Showing the following columns for the latest leaderboard: {text_leaderbo
 multimodal_leaderboard = multimodal_leaderboard.iloc[:, :4]
 print(f"Showing the following columns for the multimodal leaderboard: {multimodal_leaderboard.columns}")
 
-list1 = list(multimodal_leaderboard["Model"])
-list2 = list(text_leaderboard["Model"])
-
 
 """
 PLOT UTILS
 """
-plot_df = text_leaderboard
-MODELS = list(plot_df[list(plot_df.columns)[0]].unique())  # Get list of models
-OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
-print(OPEN_MODELS, CLOSED_MODELS)
-
 
 """
 MAIN APPLICATION
 """
 hf_app = gr.Blocks()
 with hf_app:
+
     gr.HTML(TITLE)
     gr.Markdown(INTRODUCTION_TEXT, elem_classes="markdown-text")
 
@@ -133,27 +126,25 @@ with hf_app:
         """
         with gr.TabItem("📈Plots", elem_id="plots", id=2):
             """
+            Radio Select for Text/Multimodal Leaderboard
+            """
+            leaderboard_selection = gr.Dropdown(
+                choices=["Text", "Multimodal"],
+                value="Text",
+                elem_id="value-select-0",
+                interactive=True
+            )
+
+            """
             Accordion Groups to select individual models - Hidden by default
             """
             with gr.Accordion("Select Open-weight Models 🌐", open=False):
-                open_models_selection = gr.CheckboxGroup(
-                    OPEN_MODELS,
-                    value=[],
-                    elem_id="value-select-1",
-                    interactive=True,
-                )
-
-                clrbtn1 = gr.ClearButton(open_models_selection)
+                open_models_selection = update_open_models()
+                clear_button_1 = gr.ClearButton(open_models_selection)
 
             with gr.Accordion("Select Closed-weight Models 💼", open=False):
-                closed_models_selection = gr.CheckboxGroup(
-                    CLOSED_MODELS,
-                    value=[],
-                    elem_id="value-select-2",
-                    interactive=True,
-                )
-
-                clrbtn2 = gr.ClearButton(closed_models_selection)
+                closed_models_selection = update_closed_models()
+                clear_button_2 = gr.ClearButton(closed_models_selection)
 
             """
             Checkbox group to control the layout of the plot 
@@ -175,7 +166,7 @@ with hf_app:
             # Uses this data to plot the %played v/s quality score
             with gr.Row():
                 dummy_plot_df = gr.DataFrame(
-                    value=plot_df,
+                    value=get_plot_df(),
                     visible=False
                 )
 
@@ -185,7 +176,8 @@ with hf_app:
                     plot_output = gr.Plot()
 
             """
-            CHANGE ACTIONS
+            PLOT CHANGE ACTIONS
+            Toggle 'Select All Models' based on the values in Accordion checkbox groups
             """
             open_models_selection.change(
                 plotly_plot,
@@ -208,8 +200,32 @@ with hf_app:
                 queue=True
             )
 
-    hf_app.load()
+            """
+            LEADERBOARD SELECT CHANGE ACTIONS
+            Update Checkbox Groups and Dummy DF based on the leaderboard selected
+            """
+            leaderboard_selection.change(
+                update_open_models,
+                [leaderboard_selection],
+                [open_models_selection],
+                queue=True
+            )
 
+            leaderboard_selection.change(
+                update_closed_models,
+                [leaderboard_selection],
+                [closed_models_selection],
+                queue=True
+            )
+
+            leaderboard_selection.change(
+                get_plot_df,
+                [leaderboard_selection],
+                [dummy_plot_df],
+                queue=True
+            )
+
+    hf_app.load()
 hf_app.queue()
 
 # # Add scheduler to auto-restart the HF space at every TIME interval and update every component each time

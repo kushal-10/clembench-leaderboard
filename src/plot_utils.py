@@ -2,8 +2,10 @@ import pandas as pd
 import plotly.express as px
 import requests
 import json
+import gradio as gr
 
 from src.assets.text_content import SHORT_NAMES
+from src.leaderboard_utils import get_github_data
 
 
 def plotly_plot(df: pd.DataFrame, list_op: list, list_co: list,
@@ -166,23 +168,109 @@ def split_models(model_list: list):
     return open_models, commercial_models
 
 
+def update_open_models(leaderboard: str = "Text"):
+    """
+    Change the list of Open Models based on the leaderboard selected
+
+    Return:
+        open_models: A list of Open Models in the selected leaderboard
+    """
+    github_data = get_github_data()
+    text_leaderboard = github_data["text"][
+        0]  # Get the text-only leaderboard for its available latest version
+    multimodal_leaderboard = github_data["multimodal"][
+        0]  # Get multimodal leaderboard for its available latest version.
+    if leaderboard == "Text":
+        MODELS = list(text_leaderboard[list(text_leaderboard.columns)[0]].unique())  # Get list of models
+        OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
+        return gr.CheckboxGroup(
+            OPEN_MODELS,
+            value=[],
+            elem_id="value-select-1",
+            interactive=True,
+        )
+    elif leaderboard == "Multimodal":
+        MODELS = list(multimodal_leaderboard[list(multimodal_leaderboard.columns)[0]].unique())
+        OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
+        return gr.CheckboxGroup(
+            OPEN_MODELS,
+            value=[],
+            elem_id="value-select-1",
+            interactive=True,
+        )
+    else:
+        print(f"Invalid leaderboard: {leaderboard}")
+
+
+def update_closed_models(leaderboard: str = "Text"):
+    """
+    Change the list of Closed Models based on the leaderboard selected
+
+    Return :
+        closed_models: A list of Closed Models in the selected leaderboard
+    """
+    github_data = get_github_data()
+    text_leaderboard = github_data["text"][
+        0]  # Get the text-only leaderboard for its available latest version
+    multimodal_leaderboard = github_data["multimodal"][
+        0]  # Get multimodal leaderboard for its available latest version.
+    if leaderboard == "Text":
+        MODELS = list(text_leaderboard[list(text_leaderboard.columns)[0]].unique())  # Get list of models
+        OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
+        return gr.CheckboxGroup(
+            CLOSED_MODELS,
+            value=[],
+            elem_id="value-select-2",
+            interactive=True,
+        )
+    elif leaderboard == "Multimodal":
+        MODELS = list(multimodal_leaderboard[list(multimodal_leaderboard.columns)[0]].unique())
+        OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
+        return gr.CheckboxGroup(
+            CLOSED_MODELS,
+            value=[],
+            elem_id="value-select-2",
+            interactive=True,
+        )
+    else:
+        print(f"Invalid leaderboard: {leaderboard}")
+
+
+def get_plot_df(leaderboard: str = "Text"):
+    """
+    Select the leaderboard for the plot
+
+    Return:
+        plot_df: Return the dataframe for the selected leaderboard
+    """
+    github_data = get_github_data()
+    text_leaderboard = github_data["text"][0]  # Get the text-only leaderboard for its available latest version
+    multimodal_leaderboard = github_data["multimodal"][0]  # Get multimodal leaderboard for its available latest version.
+    if leaderboard == "Text":
+        return text_leaderboard
+    elif leaderboard == "Multimodal":
+        return multimodal_leaderboard
+    else:
+        print(f"Invalid leaderboard: {leaderboard}")
+
+
 if __name__ == '__main__':
     mm_model_list = ['gpt-4o-2024-05-13', 'gpt-4-1106-vision-preview', 'claude-3-opus-20240229', 'gemini-1.5-pro-latest',
-     'gemini-1.5-flash-latest', 'llava-v1.6-34b-hf', 'llava-v1.6-vicuna-13b-hf', 'idefics-80b-instruct',
-     'llava-1.5-13b-hf', 'idefics-9b-instruct']
+                     'gemini-1.5-flash-latest', 'llava-v1.6-34b-hf', 'llava-v1.6-vicuna-13b-hf', 'idefics-80b-instruct',
+                     'llava-1.5-13b-hf', 'idefics-9b-instruct']
 
-    text_model_list = ['vicuna-33b-v1.3', 'gpt-4-0125-preview', 'gpt-4-turbo-2024-04-09', 'claude-3-5-sonnet-20240620',
-     'gpt-4-1106-preview', 'gpt-4-0613', 'gpt-4o-2024-05-13', 'claude-3-opus-20240229', 'gemini-1.5-pro-latest',
-     'Meta-Llama-3-70B-Instruct-hf', 'claude-2.1', 'gemini-1.5-flash-latest', 'claude-3-sonnet-20240229',
-     'Qwen1.5-72B-Chat', 'mistral-large-2402', 'gpt-3.5-turbo-0125', 'gemini-1.0-pro', 'command-r-plus', 'openchat_3.5',
-     'claude-3-haiku-20240307', 'sheep-duck-llama-2-70b-v1.1', 'Meta-Llama-3-8B-Instruct-hf', 'openchat-3.5-1210',
-     'WizardLM-70b-v1.0', 'openchat-3.5-0106', 'Qwen1.5-14B-Chat', 'mistral-medium-2312', 'Qwen1.5-32B-Chat',
-     'codegemma-7b-it', 'dolphin-2.5-mixtral-8x7b', 'CodeLlama-34b-Instruct-hf', 'command-r', 'gemma-1.1-7b-it',
-     'SUS-Chat-34B', 'Mixtral-8x22B-Instruct-v0.1', 'tulu-2-dpo-70b', 'Nous-Hermes-2-Mixtral-8x7B-SFT',
-     'WizardLM-13b-v1.2', 'Mistral-7B-Instruct-v0.2', 'Yi-34B-Chat', 'Mixtral-8x7B-Instruct-v0.1',
-     'Mistral-7B-Instruct-v0.1', 'Yi-1.5-34B-Chat', 'vicuna-13b-v1.5', 'Yi-1.5-6B-Chat', 'Starling-LM-7B-beta',
-     'sheep-duck-llama-2-13b', 'Yi-1.5-9B-Chat', 'gemma-1.1-2b-it', 'Qwen1.5-7B-Chat', 'gemma-7b-it',
-     'llama-2-70b-chat-hf', 'Qwen1.5-0.5B-Chat', 'Qwen1.5-1.8B-Chat']
+    text_model_list = ['vicuna-33b-v1.3', 'gpt-4-0125-preview', 'gpt-4-turbo-2024-04-09', 'claude-3-5-sonnet-20240620', 'gpt-4-1106-preview',
+                         'gpt-4-0613', 'gpt-4o-2024-05-13', 'claude-3-opus-20240229', 'gemini-1.5-pro-latest',
+                         'Meta-Llama-3-70B-Instruct-hf', 'claude-2.1', 'gemini-1.5-flash-latest', 'claude-3-sonnet-20240229',
+                         'Qwen1.5-72B-Chat', 'mistral-large-2402', 'gpt-3.5-turbo-0125', 'gemini-1.0-pro', 'command-r-plus', 'openchat_3.5',
+                         'claude-3-haiku-20240307', 'sheep-duck-llama-2-70b-v1.1', 'Meta-Llama-3-8B-Instruct-hf', 'openchat-3.5-1210',
+                         'WizardLM-70b-v1.0', 'openchat-3.5-0106', 'Qwen1.5-14B-Chat', 'mistral-medium-2312', 'Qwen1.5-32B-Chat',
+                         'codegemma-7b-it', 'dolphin-2.5-mixtral-8x7b', 'CodeLlama-34b-Instruct-hf', 'command-r', 'gemma-1.1-7b-it',
+                         'SUS-Chat-34B', 'Mixtral-8x22B-Instruct-v0.1', 'tulu-2-dpo-70b', 'Nous-Hermes-2-Mixtral-8x7B-SFT',
+                         'WizardLM-13b-v1.2', 'Mistral-7B-Instruct-v0.2', 'Yi-34B-Chat', 'Mixtral-8x7B-Instruct-v0.1',
+                         'Mistral-7B-Instruct-v0.1', 'Yi-1.5-34B-Chat', 'vicuna-13b-v1.5', 'Yi-1.5-6B-Chat', 'Starling-LM-7B-beta',
+                         'sheep-duck-llama-2-13b', 'Yi-1.5-9B-Chat', 'gemma-1.1-2b-it', 'Qwen1.5-7B-Chat', 'gemma-7b-it',
+                         'llama-2-70b-chat-hf', 'Qwen1.5-0.5B-Chat', 'Qwen1.5-1.8B-Chat']
 
     om, cm = split_models(mm_model_list)
     print("Open")
