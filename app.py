@@ -344,7 +344,17 @@ with hf_app:
         """
         #######################       FOURTH TAB - VERSIONS AND DETAILS     #######################
         """
-        with gr.TabItem("🔄 Versions and Details", elem_id="versions-details-tab", id=3):
+        with gr.TabItem("Trends", elem_id="trends-tab", id=3):
+            with gr.Row():
+                trend_plot_text = gr.Plot()
+            
+            with gr.Row():
+                trend_plot_mm = gr.Plot()
+            
+        """
+        #######################       FOURTH TAB - VERSIONS AND DETAILS     #######################
+        """
+        with gr.TabItem("🔄 Versions and Details", elem_id="versions-details-tab", id=4):
             with gr.Row():
                 version_select = gr.Dropdown(
                     version_names, label="Select Version 🕹️", value=latest_version
