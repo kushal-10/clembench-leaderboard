@@ -162,7 +162,8 @@ def get_trend_data(text_dfs: list, model_registry_data: list) -> pd.DataFrame:
 
 
 def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '2024-12-30',
-              open_diff: float = -0.5, comm_diff: float = -10, benchmark_ticks: dict = {}, data: str = "text") -> go.Figure:
+              open_diff: float = -0.5, comm_diff: float = -10, benchmark_ticks: dict = {},
+              height: int = 1000, width: int = 1450) -> go.Figure:
     """Generate a plot for the given DataFrame.
 
     Args:
@@ -275,7 +276,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     fig.update_yaxes(range=[0, max_clemscore+10])
 
     # Update the x-axis title
-    fig.update_layout(width=1400, height=1000,
+    fig.update_layout(width=width, height=height,
         xaxis_title='Release dates of models and clembench versions'  # Set your desired x-axis title here
     )
 
@@ -303,55 +304,47 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     return fig
 
 
-
-def get_text_trend_plot() -> go.Figure:
-    """Get the trend plot for text models.
-
-    Returns:
-        go.Figure: The generated trend plot for text models.
-    """
-    text_dfs = get_github_data()['text']
-    result_df = get_trend_data(text_dfs, model_registry_data)
-    df = result_df
-
-    benchmark_ticks = {}
-    for ver in versions:
-        benchmark_ticks[pd.to_datetime(ver['date'])] = ver['version']
-
-    return get_plot(df, start_date='2023-06-01', end_date=datetime.now().strftime('%Y-%m-%d'), open_diff=-0.5, comm_diff=-5, benchmark_ticks=benchmark_ticks)
-
-def get_mm_trend_plot() -> go.Figure:
-    """Get the trend plot for multimodal models.
-
-    Returns:
-        go.Figure: The generated trend plot for multimodal models.
-    """
-    text_dfs = get_github_data()['multimodal']
-    result_df = get_trend_data(text_dfs, model_registry_data)
-    df = result_df
-
-    benchmark_ticks = {}
-    for ver in versions:
-        if 'multimodal' in ver['version']:
-            ver['version'] = ver['version'].replace('_multimodal', '')
-        benchmark_ticks[pd.to_datetime(ver['date'])] = ver['version']
-
-    return get_plot(df, start_date='2023-06-01', end_date=datetime.now().strftime('%Y-%m-%d'), open_diff=-0.5, comm_diff=-5, benchmark_ticks=benchmark_ticks, data="text")
-
-def get_final_trend_plot(benchmark: str = "text") -> go.Figure:
+def get_final_trend_plot(benchmark: str = "text", mobile_flag: bool = False) -> go.Figure:
     """Get the final trend plot for all models.
 
     Returns:
         go.Figure: The generated trend plot for selected benchmark.
     """
+    if mobile_flag:
+        height = 450
+        width = 450
+    else:
+        height = 1000
+        width = 1450
+
     if benchmark == "text":
-        return get_text_trend_plot()
-    elif benchmark == "multimodal":
-        return get_mm_trend_plot()
+        text_dfs = get_github_data()['text']
+        result_df = get_trend_data(text_dfs, model_registry_data)
+        df = result_df
+        benchmark_ticks = {}
+        for ver in versions:
+            if 'multimodal' not in ver['version']:
+                benchmark_ticks[pd.to_datetime(ver['date'])] = ver['version']
+        fig =  get_plot(df, start_date='2023-06-01', end_date=datetime.now().strftime('%Y-%m-%d'), open_diff=-0.5, comm_diff=-5, benchmark_ticks=benchmark_ticks, height=height, width=width)
+    else:
+        text_dfs = get_github_data()['multimodal']
+        result_df = get_trend_data(text_dfs, model_registry_data)
+        df = result_df
+        benchmark_ticks = {}
+        for ver in versions:
+            if 'multimodal' in ver['version']:
+                ver['version'] = ver['version'].replace('_multimodal', '')
+            benchmark_ticks[pd.to_datetime(ver['date'])] = ver['version']
+        fig = get_plot(df, start_date='2023-06-01', end_date=datetime.now().strftime('%Y-%m-%d'), open_diff=-0.5, comm_diff=-5, benchmark_ticks=benchmark_ticks, height=height, width=width)
 
 
-if __name__ == "__main__":
-    fig = get_text_trend_plot()
-    fig.show()
-    fig = get_mm_trend_plot()
-    fig.show()
+    if mobile_flag:
+        # Remove all name labels on points
+        for trace in fig.data:
+            trace.text = []  # Clear text labels
+   
+        # # Show only benchmark ticks
+        # fig.update_xaxes(tickvals=combined_tickvals, ticktext=combined_ticktext)  # Show only benchmark ticks
+        # fig.update_layout(width=width, height=height)
+
+    return fig

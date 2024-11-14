@@ -350,13 +350,22 @@ with hf_app:
                 mkd_text = gr.Markdown("### Commercial v/s Open-Weight models - clemscore over time.  The size of the circles represents the scaled value of the parameters of the models. Larger circles indicate higher parameter values.")
     
             with gr.Row():
-                trend_select = gr.Dropdown(
-                    choices=["text", "multimodal"],
-                    value="text",
-                    label="Select Benchmark 🔍",
-                    elem_id="value-select-7",
-                    interactive=True,
-                )
+                with gr.Column(scale=3):
+                    trend_select = gr.Dropdown(
+                        choices=["text", "multimodal"],
+                        value="text",
+                        label="Select Benchmark 🔍",
+                        elem_id="value-select-7",
+                        interactive=True,
+                    )
+                with gr.Column(scale=1):
+                    mobile_view = gr.CheckboxGroup(
+                        ["Mobile View"],
+                        label="View plot on smaller screens 📱",
+                        value=[],
+                        elem_id="value-select-8",
+                        interactive=True,
+                    )
             
             with gr.Row():
                 trend_plot = gr.Plot(get_text_trend_plot(),
@@ -364,7 +373,14 @@ with hf_app:
 
             trend_select.change(
                 get_final_trend_plot,
-                [trend_select],
+                [trend_select, mobile_view],
+                [trend_plot],
+                queue=True
+            )
+
+            mobile_view.change(
+                get_final_trend_plot,
+                [trend_select, mobile_view],
                 [trend_plot],
                 queue=True
             )
