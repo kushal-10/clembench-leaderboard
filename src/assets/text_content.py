@@ -1,6 +1,8 @@
 TITLE = """<h1 align="center" id="space-title"> 🏆 CLEM Leaderboard</h1>"""
 
 REPO = "https://raw.githubusercontent.com/clembench/clembench-runs/main/"
+REGISTRY_URL = "https://raw.githubusercontent.com/kushal-10/clembench/feat/registry/backends/model_registry_updated.json"
+
 HF_REPO = "colab-potsdam/clem-leaderboard"
 
 TEXT_NAME = "🥇 CLEM Leaderboard"

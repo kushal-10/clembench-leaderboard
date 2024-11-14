@@ -9,6 +9,7 @@ from src.leaderboard_utils import query_search, get_github_data
 from src.plot_utils import split_models, plotly_plot, get_plot_df, update_open_models, update_closed_models
 from src.plot_utils import reset_show_all, reset_show_names, reset_show_legend, reset_mobile_view
 from src.version_utils import get_versions_data
+from src.trend_utils import get_text_trend_plot, get_final_trend_plot
 
 """ 
 CONSTANTS
@@ -150,7 +151,7 @@ with hf_app:
         """
         #######################       THIRD TAB - PLOTS - %PLAYED V/S QUALITY SCORE     #######################
         """
-        with gr.TabItem("📈 Plots", elem_id="plots", id=2):
+        with gr.TabItem("📊 Plots", elem_id="plots", id=2):
             """
             DropDown Select for Text/Multimodal Leaderboard
             """
@@ -342,17 +343,36 @@ with hf_app:
             )
 
         """
-        #######################       FOURTH TAB - VERSIONS AND DETAILS     #######################
+        #######################       FOURTH TAB - TRENDS     #######################
         """
-        with gr.TabItem("Trends", elem_id="trends-tab", id=3):
+        with gr.TabItem("📈Trends", elem_id="trends-tab", id=3):
             with gr.Row():
-                trend_plot_text = gr.Plot()
+                mkd_text = gr.Markdown("### Commercial v/s Open-Weight models - clemscore over time.  The size of the circles represents the scaled value of the parameters of the models. Larger circles indicate higher parameter values.")
+    
+            with gr.Row():
+                trend_select = gr.Dropdown(
+                    choices=["text", "multimodal"],
+                    value="text",
+                    label="Select Benchmark 🔍",
+                    elem_id="value-select-7",
+                    interactive=True,
+                )
             
             with gr.Row():
-                trend_plot_mm = gr.Plot()
+                trend_plot = gr.Plot(get_text_trend_plot(),
+                                          label="Trend over time")
+
+            trend_select.change(
+                get_final_trend_plot,
+                [trend_select],
+                [trend_plot],
+                queue=True
+            )
+            
+ 
             
         """
-        #######################       FOURTH TAB - VERSIONS AND DETAILS     #######################
+        #######################       FIFTH TAB - VERSIONS AND DETAILS     #######################
         """
         with gr.TabItem("🔄 Versions and Details", elem_id="versions-details-tab", id=4):
             with gr.Row():
