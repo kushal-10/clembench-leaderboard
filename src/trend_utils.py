@@ -200,7 +200,6 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
                     x="Release date",
                     y="clemscore",
                     color="Model Type",  # Differentiates the datasets by color
-                    text="label_model",  # Adds text labels from the 'label_model' column
                     hover_name="model",
                     size=marker_size,
                     size_max=40,  # Max size of the circles
@@ -264,6 +263,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
             tickfont=dict(size=10)
         )
         fig.update_yaxes(range=[0, 110]) # Set y-axis range to 110 for better visibility of legend and avoiding overlap with interactivity block of plotly on top-right
+        display_mode = 'lines+markers'
     else:
         fig.update_xaxes(
             tickvals=custom_tickvals + benchmark_tickvals,  # Use filtered_custom_tickvals
@@ -273,18 +273,23 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
             tickfont=dict(size=10)  
         )
         fig.update_yaxes(range=[0, max_clemscore+10])
+        display_mode = 'lines+markers+text'
 
 
     # Add lines connecting the points for open models
     fig.add_trace(go.Scatter(x=df_open['Release date'], y=df_open['clemscore'],
-                            mode='lines+markers', name='Open Models Trendline',
-                            text=df_open['label_model'],
+                            mode=display_mode,  # Include 'text' in the mode
+                            name='Open Models Trendline',
+                            text=df_open['label_model'],  # Use label_model for text labels
+                            textposition='top center',  # Position of the text labels
                             line=dict(color=open_color), showlegend=False))
 
     # Add lines connecting the points for commercial models
     fig.add_trace(go.Scatter(x=df_commercial['Release date'], y=df_commercial['clemscore'],
-                            mode='lines+markers', name='Commercial Models Trendline',
-                            text=df_commercial['label_model'],
+                            mode=display_mode,  # Include 'text' in the mode
+                            name='Commercial Models Trendline',
+                            text=df_commercial['label_model'],  # Use label_model for text labels
+                            textposition='top center',  # Position of the text labels
                             line=dict(color=comm_color), showlegend=False))
 
 
