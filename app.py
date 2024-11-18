@@ -9,7 +9,7 @@ from src.leaderboard_utils import query_search, get_github_data
 from src.plot_utils import split_models, plotly_plot, get_plot_df, update_open_models, update_closed_models
 from src.plot_utils import reset_show_all, reset_show_names, reset_show_legend, reset_mobile_view
 from src.version_utils import get_versions_data
-from src.trend_utils import get_text_trend_plot, get_final_trend_plot
+from src.trend_utils import get_final_trend_plot
 
 """ 
 CONSTANTS
@@ -350,15 +350,15 @@ with hf_app:
                 mkd_text = gr.Markdown("### Commercial v/s Open-Weight models - clemscore over time.  The size of the circles represents the scaled value of the parameters of the models. Larger circles indicate higher parameter values.")
     
             with gr.Row():
-                with gr.Column(scale=3):
+                with gr.Column():
                     trend_select = gr.Dropdown(
-                        choices=["text", "multimodal"],
-                        value="text",
+                        choices=["Text", "Multimodal"],
+                        value="Text",
                         label="Select Benchmark 🔍",
                         elem_id="value-select-7",
                         interactive=True,
                     )
-                with gr.Column(scale=1):
+                with gr.Column():
                     mobile_view = gr.CheckboxGroup(
                         ["Mobile View"],
                         label="View plot on smaller screens 📱",
@@ -366,25 +366,55 @@ with hf_app:
                         elem_id="value-select-8",
                         interactive=True,
                     )
+                with gr.Column():
+                    show_all = gr.CheckboxGroup(
+                        ["Show All"],
+                        label="Show all models 🤖",
+                        value=[],
+                        elem_id="value-select-9",
+                        interactive=True,
+                    )
+                with gr.Column():
+                    show_names = gr.CheckboxGroup(
+                        ["Show Names"],
+                        label="Show names of trendline models 🏷️",
+                        value=[],
+                        elem_id="value-select-10",
+                        interactive=True,
+                    )
             
             with gr.Row():
-                trend_plot = gr.Plot(get_text_trend_plot(),
-                                          label="Trend over time")
+                trend_plot = gr.Plot(get_final_trend_plot(),
+                                          label="",
+                                          show_label=False)
 
             trend_select.change(
                 get_final_trend_plot,
-                [trend_select, mobile_view],
+                [trend_select, mobile_view, show_all, show_names],
                 [trend_plot],
                 queue=True
             )
 
             mobile_view.change(
                 get_final_trend_plot,
-                [trend_select, mobile_view],
+                [trend_select, mobile_view, show_all, show_names],
                 [trend_plot],
                 queue=True
             )
-            
+
+            show_all.change(
+                get_final_trend_plot,
+                [trend_select, mobile_view, show_all, show_names],
+                [trend_plot],
+                queue=True
+            )
+
+            show_names.change(
+                get_final_trend_plot,
+                [trend_select, mobile_view, show_all, show_names],
+                [trend_plot],
+                queue=True
+            )
  
             
         """
