@@ -305,7 +305,7 @@ with hf_app:
                 queue=True
             )
 
-            ## Implement Feature - Reset Plot when Leaderboard selection changes
+            ## Reset Plot when Leaderboard selection changes
             leaderboard_selection.change(
                 reset_show_all,
                 outputs=[show_all],
@@ -350,7 +350,7 @@ with hf_app:
                 mkd_text = gr.Markdown("### Commercial v/s Open-Weight models - clemscore over time.  The size of the circles represents the scaled value of the parameters of the models. Larger circles indicate higher parameter values.")
     
             with gr.Row():
-                with gr.Column():
+                with gr.Column(scale=3):
                     trend_select = gr.Dropdown(
                         choices=["Text", "Multimodal"],
                         value="Text",
@@ -358,31 +358,15 @@ with hf_app:
                         elem_id="value-select-7",
                         interactive=True,
                     )
-                with gr.Column():
+                with gr.Column(scale=1):
                     mobile_view = gr.CheckboxGroup(
-                        ["Mobile View"],
-                        label="View plot on smaller screens 📱",
+                        choices=["Mobile View"],
                         value=[],
+                        label="View plot on smaller screens 📱",
                         elem_id="value-select-8",
                         interactive=True,
                     )
-                with gr.Column():
-                    show_all = gr.CheckboxGroup(
-                        ["Show All"],
-                        label="Show all models 🤖",
-                        value=[],
-                        elem_id="value-select-9",
-                        interactive=True,
-                    )
-                with gr.Column():
-                    show_names = gr.CheckboxGroup(
-                        ["Show Names"],
-                        label="Show names of trendline models 🏷️",
-                        value=[],
-                        elem_id="value-select-10",
-                        interactive=True,
-                    )
-            
+
             with gr.Row():
                 trend_plot = gr.Plot(get_final_trend_plot(),
                                           label="",
@@ -390,28 +374,14 @@ with hf_app:
 
             trend_select.change(
                 get_final_trend_plot,
-                [trend_select, mobile_view, show_all, show_names],
+                [trend_select, mobile_view],
                 [trend_plot],
                 queue=True
             )
 
             mobile_view.change(
                 get_final_trend_plot,
-                [trend_select, mobile_view, show_all, show_names],
-                [trend_plot],
-                queue=True
-            )
-
-            show_all.change(
-                get_final_trend_plot,
-                [trend_select, mobile_view, show_all, show_names],
-                [trend_plot],
-                queue=True
-            )
-
-            show_names.change(
-                get_final_trend_plot,
-                [trend_select, mobile_view, show_all, show_names],
+                [trend_select, mobile_view],
                 [trend_plot],
                 queue=True
             )
