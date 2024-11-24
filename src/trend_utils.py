@@ -87,13 +87,13 @@ def populate_list(df: pd.DataFrame, abs_diff: float) -> list:
     return l
 
 
-def get_models_to_display(result_df: pd.DataFrame, open_diff: float = -0.5, comm_diff: float = -10) -> tuple:
+def get_models_to_display(result_df: pd.DataFrame, open_dip: float = -0.5, comm_dip: float = -10) -> tuple:
     """Retrieve models to display based on clemscore differences.
 
     Args:
         result_df (pd.DataFrame): DataFrame containing model data.
-        open_diff (float, optional): Threshold for open models. Defaults to -0.5.
-        comm_diff (float, optional): Threshold for commercial models. Defaults to -10.
+        open_dip (float, optional): Threshold for open models. Defaults to -0.5.
+        comm_dip (float, optional): Threshold for commercial models. Defaults to -10.
 
     Returns:
         tuple: Two lists of model names (open and commercial).
@@ -103,8 +103,8 @@ def get_models_to_display(result_df: pd.DataFrame, open_diff: float = -0.5, comm
 
     open_model_df = open_model_df.sort_values(by='release_date', ascending=True)
     comm_model_df = comm_model_df.sort_values(by='release_date', ascending=True)
-    open_models = populate_list(open_model_df, open_diff)
-    comm_models = populate_list(comm_model_df, comm_diff)
+    open_models = populate_list(open_model_df, open_dip)
+    comm_models = populate_list(comm_model_df, comm_dip)
     return open_models, comm_models
 
 
@@ -154,20 +154,18 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
         benchmark_ticks (dict, optional): Custom benchmark ticks for the version dates. Defaults to {}.
     
     Keyword Args:
-        open_diff (float, optional): Threshold for open models' clemscore differences. Max dip in clemscore allowed to be considered in trend.
-        comm_diff (float, optional): Threshold for commercial models' clemscore differences. Max dip in clemscore allowed to be considered in trend.
+        open_dip (float, optional): Threshold for open models' clemscore differences. Max dip in clemscore allowed to be considered in trend.
+        comm_dip (float, optional): Threshold for commercial models' clemscore differences. Max dip in clemscore allowed to be considered in trend.
         height (int, optional): Height of the plot in pixels. Adjusted for mobile or desktop views.
-        width (int, optional): Width of the plot in pixels. Adjusted for mobile or desktop views.
         mobile_view (bool, optional): Flag to indicate if the plot should be optimized for mobile display. Defaults to False.
 
     Returns:
         go.Figure: The generated plot.
     """
 
-    open_diff = plot_kwargs['open_diff']
-    comm_diff = plot_kwargs['comm_diff']
+    open_dip = plot_kwargs['open_dip']
+    comm_dip = plot_kwargs['comm_dip']
     height = plot_kwargs['height']
-    width = plot_kwargs['width']
 
     mobile_view = True if plot_kwargs['mobile_view'] else False
 
@@ -176,7 +174,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     df['Release date'] = pd.to_datetime(df['release_date'], format='ISO8601')
     # Filter out data before April 2023
     df = df[df['Release date'] >= pd.to_datetime(start_date)]
-    open_model_list, comm_model_list = get_models_to_display(df, open_diff, comm_diff)    
+    open_model_list, comm_model_list = get_models_to_display(df, open_dip, comm_dip)    
     models_to_display = open_model_list + comm_model_list
     print(f"open_model_list: {open_model_list}, comm_model_list: {comm_model_list}")
 
@@ -297,7 +295,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     fig.update_traces(textposition='top center')
 
     # Update the Legend Position and plot dimensions
-    fig.update_layout(width=width, height=height,
+    fig.update_layout(height=height,
         legend=dict(
             yanchor="top",
             y=0.99,
@@ -334,12 +332,10 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
 
     if mobile_view:
         height = 450
-        width = 300
     else:
         height = 1000
-        width = 1450
 
-    plot_kwargs = {'height': height, 'width': width, 'open_diff': -0.5, 'comm_diff': -5,
+    plot_kwargs = {'height': height, 'open_dip': -0.5, 'comm_dip': -5,
                    'mobile_view': mobile_view}
 
     if benchmark == "Text":
