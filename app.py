@@ -84,7 +84,7 @@ with hf_app:
                 elem_id="text-leaderboard-table",
                 interactive=False,
                 visible=True,
-                height=dataframe_height
+                # height=dataframe_height
             )
 
             # Show information about the clemscore and last updated date below the table
@@ -124,7 +124,7 @@ with hf_app:
                 elem_id="mm-leaderboard-table",
                 interactive=False,
                 visible=True,
-                height=dataframe_height
+                # height=dataframe_height
             )
 
             # Show information about the clemscore and last updated date below the table
@@ -407,7 +407,7 @@ with hf_app:
                 elem_id="version-leaderboard-table",
                 interactive=False,
                 visible=True,
-                height=dataframe_height
+                # height=dataframe_height
             )
 
             dummy_prev_table = gr.Dataframe(
