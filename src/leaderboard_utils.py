@@ -10,6 +10,7 @@ from src.assets.text_content import REPO
 def get_github_data():
     """
     Read and process data from CSV files hosted on GitHub. - https://github.com/clembench/clembench-runs
+    Set the path in src/assets/text_content/REPO
 
     Returns:
         github_data (dict): Dictionary containing:
@@ -60,7 +61,7 @@ def get_github_data():
                 text_dfs.append(df)
                 if text_flag:
                     text_flag = False
-                    text_date = next(ver['date'] for ver in versions if ver['version'] == version)
+                    text_date = next(ver['last_updated'] for ver in versions if ver['version'] == version)
                     text_date = datetime.strptime(text_date, "%Y-%m-%d").strftime("%d %b %Y")  
 
             else:
@@ -77,7 +78,7 @@ def get_github_data():
             mm_dfs.append(df)
             if mm_flag:
                 mm_flag = False
-                mm_date = next(ver['date'] for ver in versions if ver['version'] == version)
+                mm_date = next(ver['last_updated'] for ver in versions if ver['version'] == version)
                 mm_date = datetime.strptime(mm_date, "%Y-%m-%d").strftime("%d %b %Y")
 
       

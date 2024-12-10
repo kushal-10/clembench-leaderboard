@@ -40,7 +40,7 @@ def get_versions_data():
     # Get Last updated date of the latest version
     latest_version = version_names[0]
     latest_date = next(
-        ver['date'] for ver in versions if ver['version'] == latest_version
+        ver['last_updated'] for ver in versions if ver['version'] == latest_version
     )
     formatted_date = datetime.strptime(latest_date, "%Y-%m-%d").strftime("%d %b %Y") 
 

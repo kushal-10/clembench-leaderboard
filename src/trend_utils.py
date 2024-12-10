@@ -346,7 +346,7 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
         benchmark_ticks = {}
         for ver in versions:
             if 'multimodal' not in ver['version']: # Skip MM specific benchmark dates
-                benchmark_ticks[pd.to_datetime(ver['date'])] = ver['version']
+                benchmark_ticks[pd.to_datetime(ver['release_date'])] = ver['version']
         fig =  get_plot(text_result_df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, **plot_kwargs)
     else:
         mm_dfs = get_github_data()['multimodal']
@@ -358,8 +358,8 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
         for ver in versions:
             if 'multimodal' in ver['version']:
                 ver['version'] = ver['version'].replace('_multimodal', '')
-            if date_difference(ver['date'], '2024-07-15') >= 0:
-                benchmark_ticks[pd.to_datetime(ver['date'])] = ver['version'] ## MM benchmark dates considered after v1.6 (incl.)
+            if date_difference(ver['release_date'], '2024-07-15') >= 0:
+                benchmark_ticks[pd.to_datetime(ver['release_date'])] = ver['version'] ## MM benchmark dates considered after v1.6 (incl.)
         fig = get_plot(df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, **plot_kwargs)
 
     return fig
