@@ -7,10 +7,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 
-from src.assets.text_content import REGISTRY_URL, REPO
+from src.assets.text_content import REGISTRY_URL, REPO, BENCHMARK_FILE
 from src.leaderboard_utils import get_github_data
 
+# Cut-off date from where to start the trendgraph
 START_DATE = '2023-06-01'
+
 def get_param_size(params: str) -> float:
     """Convert parameter size from string to float.
 
@@ -87,13 +89,13 @@ def populate_list(df: pd.DataFrame, abs_diff: float) -> list:
     return l
 
 
-def get_models_to_display(result_df: pd.DataFrame, open_dip: float = -0.5, comm_dip: float = -10) -> tuple:
+def get_models_to_display(result_df: pd.DataFrame, open_dip: float = 0, comm_dip: float = 0) -> tuple:
     """Retrieve models to display based on clemscore differences.
 
     Args:
         result_df (pd.DataFrame): DataFrame containing model data.
-        open_dip (float, optional): Threshold for open models. Defaults to -0.5.
-        comm_dip (float, optional): Threshold for commercial models. Defaults to -10.
+        open_dip (float, optional): Threshold for open models. Defaults to 0.
+        comm_dip (float, optional): Threshold for commercial models. Defaults to 0.
 
     Returns:
         tuple: Two lists of model names (open and commercial).
@@ -144,7 +146,7 @@ def get_trend_data(text_dfs: list, model_registry_data: list) -> pd.DataFrame:
 
 
 def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '2024-12-30',
-             benchmark_ticks: dict = {}, **plot_kwargs) -> go.Figure:
+             benchmark_ticks: dict = {}, benchmark_update = {}, **plot_kwargs) -> go.Figure:
     """Generate a scatter plot for the given DataFrame.
 
     Args:
@@ -152,6 +154,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
         start_date (str, optional): Start date for filtering. Defaults to '2023-06-01'.
         end_date (str, optional): End date for filtering. Defaults to '2024-12-30'.
         benchmark_ticks (dict, optional): Custom benchmark ticks for the version dates. Defaults to {}.
+        benchmark_update (dict, optional): Custom benchmark metadata containing last_updated date for the versions. Defaults to {}.
     
     Keyword Args:
         open_dip (float, optional): Threshold for open models' clemscore differences. Max dip in clemscore allowed to be considered in trend.
@@ -172,7 +175,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     max_clemscore = df['clemscore'].max()
     # Convert 'release_date' to datetime
     df['Release date'] = pd.to_datetime(df['release_date'], format='ISO8601')
-    # Filter out data before April 2023
+    # Filter out data before April 2023/START_DATE
     df = df[df['Release date'] >= pd.to_datetime(start_date)]
     open_model_list, comm_model_list = get_models_to_display(df, open_dip, comm_dip)    
     models_to_display = open_model_list + comm_model_list
@@ -180,8 +183,8 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
 
     # Create a column to indicate if the model should be labeled
     df['label_model'] = df['model'].apply(lambda x: x if x in models_to_display else "")
-    # If select_all is False, then show only the models in models_to_display
 
+    # If mobile_view, then show only the models in models_to_display i.e. on the trend line #minimalistic
     if mobile_view:
         df = df[df['model'].isin(models_to_display)]
 
@@ -216,24 +219,48 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     date_range = pd.date_range(start=start_date, end=end_date, freq='2MS')  # '2MS' stands for 2 Months Start frequency
     # Create labels for these ticks
     custom_ticks = {date: date.strftime('%b %Y') for date in date_range}
+
+    ## Benchmark Version ticks
     benchmark_tickvals = list(pd.to_datetime(list(benchmark_ticks.keys())))
     custom_ticks = {k:v for k,v in custom_ticks.items() if k not in benchmark_tickvals}
     custom_tickvals = list(custom_ticks.keys())
 
 
-    # Plot Benchmark X-axis ticks with Vertical Dotted Lines
-    for date in benchmark_tickvals:
-        fig.add_shape(
-            go.layout.Shape(
-                type='line',
-                x0=date,
-                x1=date,
-                y0=0,
-                y1=1,
-                yref='paper',
-                line=dict(color='#A9A9A9', dash='dash')
+    for date, version in benchmark_ticks.items():
+        # Find the corresponding update date from benchmark_update based on the version name
+        update_date = next((update_date for update_date, ver in benchmark_update.items() if version in ver), None)
+
+        if update_date:
+            # Add vertical black dotted line for each benchmark_tick date
+            fig.add_shape(
+                go.layout.Shape(
+                    type='line',
+                    x0=date,
+                    x1=date,
+                    y0=0,
+                    y1=1,
+                    yref='paper',
+                    line=dict(color='#A9A9A9', dash='dash'),  # Black dotted line
+                )
             )
-        )
+
+            # Add hover information across the full y-axis range
+            fig.add_trace(
+                go.Scatter(
+                    x=[date]*100,
+                    y=list(range(0,100)),  # Covers full y-axis range
+                    mode='markers',
+                    line=dict(color='rgba(255,255,255,0)', width=0),  # Fully transparent line
+                    hovertext=[
+                        f"Version: {version} released on {date.strftime("%d %b %Y")}, last updated on: {update_date.strftime("%d %b %Y")}" 
+                        for _ in range(100)
+                    ],  # Unique hovertext for all points
+                    hoverinfo="text",
+                    hoveron='points',
+                    showlegend=False
+                )
+            )
+
 
     if mobile_view:
         # Remove custom_tickvals within -1 month to +1 month of benchmark_tickvals for better visibility
@@ -246,13 +273,13 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
         benchmark_tick_texts = []
         for i in range(len(benchmark_tickvals)):
             if i == 0:
-                benchmark_tick_texts.append(f"<br><b>{benchmark_ticks[benchmark_tickvals[i]]}</b>")
+                benchmark_tick_texts.append(f"<br><span style='font-size:7px;'><b>{benchmark_ticks[benchmark_tickvals[i]]}</b></span>")
             else:
                 date_diff = (benchmark_tickvals[i] - benchmark_tickvals[i - 1]).days
                 if date_diff <= 60:
-                    benchmark_tick_texts.append(f"<br><br><b>{benchmark_ticks[benchmark_tickvals[i]]}</b>")
+                    benchmark_tick_texts.append(f"<br><br><span style='font-size:7px;'><b>{benchmark_ticks[benchmark_tickvals[i]]}</b></span>")
                 else:
-                    benchmark_tick_texts.append(f"<br><b>{benchmark_ticks[benchmark_tickvals[i]]}</b>")
+                    benchmark_tick_texts.append(f"<br><span style='font-size:7px;'><b>{benchmark_ticks[benchmark_tickvals[i]]}</b></span>")
         fig.update_xaxes(
             tickvals=filtered_custom_tickvals + benchmark_tickvals,  # Use filtered_custom_tickvals
             ticktext=[f"{date.strftime('%b')}<br>{date.strftime('%y')}" for date in filtered_custom_tickvals] + 
@@ -266,7 +293,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
         fig.update_xaxes(
             tickvals=custom_tickvals + benchmark_tickvals,  # Use filtered_custom_tickvals
             ticktext=[f"{date.strftime('%b')} {date.strftime('%Y')}" for date in custom_tickvals] + 
-                    [f"<br><b>{benchmark_ticks[date]}</b>" for date in benchmark_tickvals],  # Added <br> for vertical alignment
+                    [f"<br><span style='font-size:12px;'><b>{benchmark_ticks[date]}</b></span>" for date in benchmark_tickvals],  # Added <br> for vertical alignment
             tickangle=0,
             tickfont=dict(size=10)  
         )
@@ -303,6 +330,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
             x=0.01
         ) 
     )
+
     return fig
 
 def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> go.Figure:
@@ -319,8 +347,7 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
     response = requests.get(REGISTRY_URL)
     model_registry_data = response.json()
     # Custom tick labels
-    base_repo = REPO
-    json_url = base_repo + "benchmark_runs.json"
+    json_url = REPO + BENCHMARK_FILE
     response = requests.get(json_url)
 
     # Check if the JSON file request was successful
@@ -335,37 +362,36 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
     else:
         height = 1000
 
+
     plot_kwargs = {'height': height, 'open_dip': 0, 'comm_dip': 0,
                    'mobile_view': mobile_view}
 
-    # plot_kwargs = {'height': height, 'open_dip': -0.5, 'comm_dip': -5,
-    #                'mobile_view': mobile_view}
-
+    benchmark_ticks = {}
+    benchmark_update = {}
     if benchmark == "Text":
         text_dfs = get_github_data()['text']['dataframes']
         text_result_df = get_trend_data(text_dfs, model_registry_data)
-
         ## Get benchmark tickvalues as dates for X-axis
-        benchmark_ticks = {}
         for ver in versions:
             if 'multimodal' not in ver['version']: # Skip MM specific benchmark dates
                 benchmark_ticks[pd.to_datetime(ver['release_date'])] = ver['version']
-        fig =  get_plot(text_result_df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, **plot_kwargs)
+                if pd.to_datetime(ver['last_updated']) not in benchmark_update:
+                    benchmark_update[pd.to_datetime(ver['last_updated'])] = [ver['version']]
+                else:
+                    benchmark_update[pd.to_datetime(ver['last_updated'])].append(ver['version'])
+
+        fig =  get_plot(text_result_df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, benchmark_update=benchmark_update, **plot_kwargs)
     else:
         mm_dfs = get_github_data()['multimodal']['dataframes']
         result_df = get_trend_data(mm_dfs, model_registry_data)
         df = result_df
-
-        ## Get benchmark tickvalues as dates for X-axis
-        benchmark_ticks = {}
         for ver in versions:
             if 'multimodal' in ver['version']:
                 temp_ver = ver['version']
                 temp_ver = temp_ver.replace('_multimodal', '')
                 benchmark_ticks[pd.to_datetime(ver['release_date'])] = temp_ver ## MM benchmark dates considered after v1.6 (incl.)
-
-        print("benchmark_ticks")
-        print(benchmark_ticks)
-        fig = get_plot(df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, **plot_kwargs)
+                benchmark_update[pd.to_datetime(ver['last_updated'])] = temp_ver
+                
+        fig = get_plot(df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, benchmark_update=benchmark_update, **plot_kwargs)
 
     return fig
