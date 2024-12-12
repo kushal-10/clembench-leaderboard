@@ -349,7 +349,7 @@ with hf_app:
                 with gr.Column(scale=3):
                     trend_select = gr.Dropdown(
                         choices=["Text", "Multimodal"],
-                        value="Text",
+                        value=None,
                         label="Select Benchmark 🔍",
                         elem_id="value-select-7",
                         interactive=True,
@@ -364,9 +364,7 @@ with hf_app:
                     )
 
             with gr.Row():
-                trend_plot = gr.Plot(get_final_trend_plot(),
-                                          label="",
-                                          show_label=False)
+                trend_plot = gr.Plot(show_label=False)
 
             trend_select.change(
                 get_final_trend_plot,
