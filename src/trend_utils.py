@@ -169,6 +169,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     open_dip = plot_kwargs['open_dip']
     comm_dip = plot_kwargs['comm_dip']
     height = plot_kwargs['height']
+    width = plot_kwargs['width']
 
     mobile_view = True if plot_kwargs['mobile_view'] else False
 
@@ -204,8 +205,18 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
                     hover_name="model",
                     size=marker_size,
                     size_max=40,  # Max size of the circles
-                    template="plotly_white")
+                    template="plotly_white",
+                    hover_data={  # Customize hover information
+                        "Release date": True,  # Show the release date
+                        "clemscore": True,  # Show the clemscore
+                        "Model Type": True  # Show the model type
+                    },
+                    custom_data=["model", "Release date", "clemscore"]  # Specify custom data columns for hover
+                    )
 
+    fig.update_traces(
+        hovertemplate='Model Name: %{customdata[0]}<br>Release date: %{customdata[1]}<br>Clemscore: %{customdata[2]}<br>'
+    )
     
     # Sort dataframes for line plotting
     df_open = df[df['model'].isin(open_model_list)].sort_values(by='Release date')
@@ -252,7 +263,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
                     mode='markers',
                     line=dict(color='rgba(255,255,255,0)', width=0),  # Fully transparent line
                     hovertext=[
-                        f"Version: {version} released on {date.strftime("%d %b %Y")}, last updated on: {update_date.strftime("%d %b %Y")}" 
+                        f"Version: {version} released on {date.strftime('%d %b %Y')}, last updated on: {update_date.strftime('%d %b %Y')}" 
                         for _ in range(100)
                     ],  # Unique hovertext for all points
                     hoverinfo="text",
@@ -273,13 +284,13 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
         benchmark_tick_texts = []
         for i in range(len(benchmark_tickvals)):
             if i == 0:
-                benchmark_tick_texts.append(f"<br><span style='font-size:7px;'><b>{benchmark_ticks[benchmark_tickvals[i]]}</b></span>")
+                benchmark_tick_texts.append(f"<br><br><b>{benchmark_ticks[benchmark_tickvals[i]]}</b>")
             else:
                 date_diff = (benchmark_tickvals[i] - benchmark_tickvals[i - 1]).days
-                if date_diff <= 60:
-                    benchmark_tick_texts.append(f"<br><br><span style='font-size:7px;'><b>{benchmark_ticks[benchmark_tickvals[i]]}</b></span>")
+                if date_diff <= 75:
+                    benchmark_tick_texts.append(f"<br><br><br><b>{benchmark_ticks[benchmark_tickvals[i]]}</b>")
                 else:
-                    benchmark_tick_texts.append(f"<br><span style='font-size:7px;'><b>{benchmark_ticks[benchmark_tickvals[i]]}</b></span>")
+                    benchmark_tick_texts.append(f"<br><br><b>{benchmark_ticks[benchmark_tickvals[i]]}</b>")
         fig.update_xaxes(
             tickvals=filtered_custom_tickvals + benchmark_tickvals,  # Use filtered_custom_tickvals
             ticktext=[f"{date.strftime('%b')}<br>{date.strftime('%y')}" for date in filtered_custom_tickvals] + 
@@ -331,6 +342,10 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
         ) 
     )
 
+    if width:
+        print("Custom Seting the Width :")
+        fig.update_layout(width=width)
+
     return fig
 
 def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> go.Figure:
@@ -359,11 +374,12 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
 
     if mobile_view:
         height = 450
+        width = 375
     else:
         height = 1000
+        width = None
 
-
-    plot_kwargs = {'height': height, 'open_dip': 0, 'comm_dip': 0,
+    plot_kwargs = {'height': height, 'width': width, 'open_dip': 0, 'comm_dip': 0,
                    'mobile_view': mobile_view}
 
     benchmark_ticks = {}
@@ -391,7 +407,7 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
                 temp_ver = temp_ver.replace('_multimodal', '')
                 benchmark_ticks[pd.to_datetime(ver['release_date'])] = temp_ver ## MM benchmark dates considered after v1.6 (incl.)
                 benchmark_update[pd.to_datetime(ver['last_updated'])] = temp_ver
-                
+
         fig = get_plot(df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, benchmark_update=benchmark_update, **plot_kwargs)
 
     return fig
