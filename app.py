@@ -8,7 +8,7 @@ from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT, MU
 from src.leaderboard_utils import query_search, get_github_data
 from src.plot_utils import split_models, plotly_plot, get_plot_df, update_open_models, update_closed_models
 from src.plot_utils import reset_show_all, reset_show_names, reset_show_legend, reset_mobile_view
-from src.version_utils import get_versions_data
+from src.version_utils import get_version_data
 from src.trend_utils import get_final_trend_plot
 
 """ 
@@ -16,8 +16,6 @@ CONSTANTS
 """
 # For restarting the gradio application every 24 Hrs
 TIME = 43200  # in seconds # Reload will not work locally - requires HFToken # The app launches locally as expected - only without the reload utility
-# For Leaderboard table
-dataframe_height = 800  # Height of the table in pixels # Set on average considering all possible devices
 
 
 """
@@ -34,29 +32,29 @@ def restart_space():
 GITHUB UTILS
 """
 github_data = get_github_data()
-text_leaderboard = github_data["text"][0]  # Get the text-only leaderboard for its available latest version
-multimodal_leaderboard = github_data["multimodal"][0]  # Get multimodal leaderboard for its available latest version.
+text_leaderboard = github_data["text"]["dataframes"][0]  # Get the latest version of text-only leaderboard
+multimodal_leaderboard = github_data["multimodal"]["dataframes"][0]  # Get the latest version of multimodal leaderboard
 
 # Show only First 4 columns for the leaderboards
+# Should be Model Name, Clemscore, %Played, and Quality Score
 text_leaderboard = text_leaderboard.iloc[:, :4]
-print(f"Showing the following columns for the latest leaderboard: {text_leaderboard.columns}")
 multimodal_leaderboard = multimodal_leaderboard.iloc[:, :4]
-print(f"Showing the following columns for the multimodal leaderboard: {multimodal_leaderboard.columns}")
 
 
 """
 VERSIONS UTILS
 """
-versions_data = get_versions_data()
-latest_version = versions_data['latest']  # Always show latest version in text-only benchmark
-last_updated_date = versions_data['date']
-version_names = list(versions_data.keys())
-version_names = [v for v in version_names if v.startswith("v")]  # Remove "latest" and "date" keys
+versions_data = get_version_data()
+latest_version = versions_data['versions'][0]['name']
+last_updated_date = versions_data['versions'][0]['last_updated'][0]
+version_names = [v['name'] for v in versions_data['versions']]
 
 global version_df
-version_df = versions_data[latest_version]
+version_df = versions_data['dataframes'][0]
 def select_version_df(name):
-    return versions_data[name]
+    for i, v in enumerate(versions_data['versions']):
+        if v['name'] == name:
+            return versions_data['dataframes'][i]
 
 """
 MAIN APPLICATION
@@ -83,13 +81,12 @@ with hf_app:
                 value=text_leaderboard,
                 elem_id="text-leaderboard-table",
                 interactive=False,
-                visible=True,
-                # height=dataframe_height
+                visible=True
             )
 
             # Show information about the clemscore and last updated date below the table
             gr.HTML(CLEMSCORE_TEXT)
-            gr.HTML(f"Last updated - {github_data['date']}")
+            gr.HTML(f"Last updated - {github_data['text']['version_data'][0]['last_updated'][0]}")
 
             # Add a dummy leaderboard to handle search queries in leaderboard_table
             # This will show a temporary leaderboard based on the searched value
@@ -123,13 +120,12 @@ with hf_app:
                 value=multimodal_leaderboard,
                 elem_id="mm-leaderboard-table",
                 interactive=False,
-                visible=True,
-                # height=dataframe_height
+                visible=True
             )
 
             # Show information about the clemscore and last updated date below the table
             gr.HTML(CLEMSCORE_TEXT)
-            gr.HTML(f"Last updated - {github_data['mm_date']}")
+            gr.HTML(f"Last updated - {github_data['multimodal']['version_data'][0]['last_updated'][0]}")
 
             # Add a dummy leaderboard to handle search queries in leaderboard_table
             # This will show a temporary leaderboard based on the searched value
@@ -406,8 +402,7 @@ with hf_app:
                 value=version_df,
                 elem_id="version-leaderboard-table",
                 interactive=False,
-                visible=True,
-                # height=dataframe_height
+                visible=True
             )
 
             dummy_prev_table = gr.Dataframe(

@@ -79,10 +79,10 @@ def populate_list(df: pd.DataFrame, abs_diff: float) -> list:
             prev_clemscore = curr_clemscore
             prev_date = curr_date
 
-    # Add the last model if the difference between the last and previous date is greater than 15 days
-    last_date = df.iloc[-1]['release_date']
-    if date_difference(last_date, prev_date) > 15:
-        l.append(df.iloc[-1]['model'])
+    # # Add the last model if the difference between the last and previous date is greater than 15 days
+    # last_date = df.iloc[-1]['release_date']
+    # if date_difference(last_date, prev_date) > 15:
+    #     l.append(df.iloc[-1]['model'])
 
     return l
 
@@ -335,11 +335,14 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
     else:
         height = 1000
 
-    plot_kwargs = {'height': height, 'open_dip': -0.5, 'comm_dip': -5,
+    plot_kwargs = {'height': height, 'open_dip': 0, 'comm_dip': 0,
                    'mobile_view': mobile_view}
 
+    # plot_kwargs = {'height': height, 'open_dip': -0.5, 'comm_dip': -5,
+    #                'mobile_view': mobile_view}
+
     if benchmark == "Text":
-        text_dfs = get_github_data()['text']
+        text_dfs = get_github_data()['text']['dataframes']
         text_result_df = get_trend_data(text_dfs, model_registry_data)
 
         ## Get benchmark tickvalues as dates for X-axis
@@ -349,7 +352,7 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
                 benchmark_ticks[pd.to_datetime(ver['release_date'])] = ver['version']
         fig =  get_plot(text_result_df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, **plot_kwargs)
     else:
-        mm_dfs = get_github_data()['multimodal']
+        mm_dfs = get_github_data()['multimodal']['dataframes']
         result_df = get_trend_data(mm_dfs, model_registry_data)
         df = result_df
 
@@ -357,9 +360,12 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
         benchmark_ticks = {}
         for ver in versions:
             if 'multimodal' in ver['version']:
-                ver['version'] = ver['version'].replace('_multimodal', '')
-            if date_difference(ver['release_date'], '2024-07-15') >= 0:
-                benchmark_ticks[pd.to_datetime(ver['release_date'])] = ver['version'] ## MM benchmark dates considered after v1.6 (incl.)
+                temp_ver = ver['version']
+                temp_ver = temp_ver.replace('_multimodal', '')
+                benchmark_ticks[pd.to_datetime(ver['release_date'])] = temp_ver ## MM benchmark dates considered after v1.6 (incl.)
+
+        print("benchmark_ticks")
+        print(benchmark_ticks)
         fig = get_plot(df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, **plot_kwargs)
 
     return fig
