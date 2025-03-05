@@ -125,7 +125,7 @@ def interpolate_color(rank_val, start_color):
         raise KeyError(f"Invalid color selected for trend graph: {start_color}. Please set either red or blue. Alternatively, set hue value in src.trend_utils.interpolate_colour")
     
     saturation = rank_val*100
-    value = 50 if rank_val == 1 else 100
+    value = 70 if rank_val == 1 else 100
 
     return f"hsv({hue},{saturation},{value})"
 
@@ -200,9 +200,10 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
 
     max_clemscore = df['clemscore'].max()
     # Convert 'release_date' to datetime
-    df['Release date'] = pd.to_datetime(df['release_date'], format='ISO8601')
+    df['Release Date (Model and & Benchmark Version)'] = pd.to_datetime(df['release_date'], format='ISO8601')
+
     # Filter out data before April 2023/START_DATE
-    df = df[df['Release date'] >= pd.to_datetime(start_date)]
+    df = df[df['Release Date (Model and & Benchmark Version)'] >= pd.to_datetime(start_date)]
     open_model_list, comm_model_list = get_models_to_display(df, open_dip, comm_dip)    
     models_to_display = open_model_list + comm_model_list
 
@@ -220,6 +221,15 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
         reverse=True
     ) 
 
+    print("version_names before filter")
+    print(version_names, len(df))
+
+    version_names = version_names[:3] # Select 3 latest benchmark versions
+    df = df[df['version'].isin(tuple(version_names))]
+
+    print("version_names after filter")
+    print(version_names, len(df))
+
     rank = 2
     max_rank = len(version_names)
     rank_value = {version_names[0]: 1}
@@ -234,48 +244,48 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     )
 
     # Add an identifier column to each DataFrame
-    df['Model Type'] = df.apply(
+    df['Model Type & Benchmark Version'] = df.apply(
         lambda row: f"Open-Weight {row['version']}" if row['open_weight'] else f"Commercial {row['version']}",
         axis=1
     )
 
     color_map = {}
     for i in range(len(df)):
-        if df.iloc[i]['Model Type'] not in color_map:
+        if df.iloc[i]['Model Type & Benchmark Version'] not in color_map:
             if df.iloc[i]['open_weight']:
-                color_map[df.iloc[i]['Model Type']] = interpolate_color(df.iloc[i]['color_value'], COLOUR_OPEN)
+                color_map[df.iloc[i]['Model Type & Benchmark Version']] = interpolate_color(df.iloc[i]['color_value'], COLOUR_OPEN)
             else:
-                color_map[df.iloc[i]['Model Type']] = interpolate_color(df.iloc[i]['color_value'], COLOUR_COMM)
+                color_map[df.iloc[i]['Model Type & Benchmark Version']] = interpolate_color(df.iloc[i]['color_value'], COLOUR_COMM)
 
     
     marker_size = df['parameters'].apply(lambda x: np.sqrt(x) if x > 0 else np.sqrt(400)).astype(float)  # Arbitrary sqrt value to scale marker size based on parameter size
 
     # Create the scatter plot
     fig = px.scatter(df,
-                    x="Release date",
+                    x="Release Date (Model and & Benchmark Version)",
                     y="clemscore",
-                    color="Model Type",  # Differentiates the datasets by color
+                    color="Model Type & Benchmark Version",  # Differentiates the datasets by color
                     color_discrete_map=color_map,  # Map colors to the defined subclasses
                     hover_name="model",
                     size=marker_size,
                     size_max=40,  # Max size of the circles
                     template="plotly_white",
                     hover_data={  # Customize hover information
-                        "Release date": True,  # Show the release date
+                        "Release Date (Model and & Benchmark Version)": True,  # Show the Release Date (Model and & Benchmark Version)
                         "clemscore": True,  # Show the clemscore
                         "version": True
                     },
-                    custom_data=["model", "Release date", "clemscore", "version"],  # Specify custom data columns for hover
-                    opacity=0.9
+                    custom_data=["model", "Release Date (Model and & Benchmark Version)", "clemscore", "version"],  # Specify custom data columns for hover
+                    opacity=0.8
                     )
 
     fig.update_traces(
-        hovertemplate='Model Name: %{customdata[0]}<br>Release date: %{customdata[1]}<br>Clemscore: %{customdata[2]}<br>Benchmark Version: %{customdata[3]}<br>'
+        hovertemplate='Model Name: %{customdata[0]}<br>Release Date (Model and & Benchmark Version): %{customdata[1]}<br>Clemscore: %{customdata[2]}<br>Benchmark Version: %{customdata[3]}<br>'
     )
     
     # Sort dataframes for line plotting
-    df_open = df[df['model'].isin(open_model_list)].sort_values(by='Release date')
-    df_commercial = df[df['model'].isin(comm_model_list)].sort_values(by='Release date')
+    df_open = df[df['model'].isin(open_model_list)].sort_values(by='Release Date (Model and & Benchmark Version)')
+    df_commercial = df[df['model'].isin(comm_model_list)].sort_values(by='Release Date (Model and & Benchmark Version)')
 
     ## Custom tics for x axis
     # Define the start and end dates
@@ -331,7 +341,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
 
 
     # Add lines connecting the points for open models
-    fig.add_trace(go.Scatter(x=df_open['Release date'], y=df_open['clemscore'],
+    fig.add_trace(go.Scatter(x=df_open['Release Date (Model and & Benchmark Version)'], y=df_open['clemscore'],
                             mode=display_mode,  # Include 'text' in the mode
                             name='Open Models Trendline',
                             text=df_open['label_model'],  # Use label_model for text labels
@@ -339,7 +349,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
                             line=dict(color='red'), showlegend=False))
 
     # Add lines connecting the points for commercial models
-    fig.add_trace(go.Scatter(x=df_commercial['Release date'], y=df_commercial['clemscore'],
+    fig.add_trace(go.Scatter(x=df_commercial['Release Date (Model and & Benchmark Version)'], y=df_commercial['clemscore'],
                             mode=display_mode,  # Include 'text' in the mode
                             name='Commercial Models Trendline',
                             text=df_commercial['label_model'],  # Use label_model for text labels
