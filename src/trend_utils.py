@@ -221,14 +221,8 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
         reverse=True
     ) 
 
-    print("version_names before filter")
-    print(version_names, len(df))
-
     version_names = version_names[:3] # Select 3 latest benchmark versions
     df = df[df['version'].isin(tuple(version_names))]
-
-    print("version_names after filter")
-    print(version_names, len(df))
 
     rank = 2
     max_rank = len(version_names)
