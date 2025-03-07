@@ -200,7 +200,9 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
 
     max_clemscore = df['clemscore'].max()
     # Convert 'release_date' to datetime
-    df['Release Date (Model and & Benchmark Version)'] = pd.to_datetime(df['release_date'], format='ISO8601')
+    print(df['release_date'])
+    df['Release Date (Model and & Benchmark Version)'] = pd.to_datetime(df['release_date'], format='%Y-%m-%d')
+    print(df['Release Date (Model and & Benchmark Version)'])
 
     # Filter out data before April 2023/START_DATE
     df = df[df['Release Date (Model and & Benchmark Version)'] >= pd.to_datetime(start_date)]
@@ -274,7 +276,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
                     )
 
     fig.update_traces(
-        hovertemplate='Model Name: %{customdata[0]}<br>Release Date: %{customdata[1]}<br>Clemscore: %{customdata[2]}<br>Benchmark Version: %{customdata[3]}<br>'
+        hovertemplate='Model Name: %{customdata[0]}<br>Release Date: %{customdata[1]|%Y-%m-%d}<br>Clemscore: %{customdata[2]}<br>Benchmark Version: %{customdata[3]}<br>'
     )
     
     # Sort dataframes for line plotting
@@ -433,3 +435,15 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
         fig = get_plot(df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, benchmark_update=benchmark_update, **plot_kwargs)
 
     return fig
+
+if __name__ == '__main__':
+    df = pd.DataFrame(
+        {
+            "dates" : ["2025-01-01", "2024-03-02"],
+            "nums": ["11", "22"]
+        }
+    )
+
+    df['dates_new'] = pd.to_datetime(df['dates'], format='ISO8601')
+
+    print(df)
