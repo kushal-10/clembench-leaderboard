@@ -57,7 +57,11 @@ def select_version_df(name):
         if v['name'] == name:
             return versions_data['dataframes'][i]
 
-
+models_list = text_leaderboard.iloc[:, 0].unique().tolist()
+open_models, commercial_models = split_models(models_list)
+initial_plot = plotly_plot(df=text_leaderboard, list_op=open_models, list_co=commercial_models,
+                         show_all=["Show All Models"], show_names=["Show Names"], show_legend=[],
+                           mobile_view=[], custom_width=1200)
 """
 MAIN APPLICATION
 """
@@ -179,7 +183,7 @@ with hf_app:
                     show_all = gr.CheckboxGroup(
                         ["Select All Models"],
                         label="Show plot for all models 🤖",
-                        value=[],
+                        value="Select All Models",
                         elem_id="value-select-3",
                         interactive=True,
                     )
@@ -188,7 +192,7 @@ with hf_app:
                     show_names = gr.CheckboxGroup(
                         ["Show Names"],
                         label="Show names of models on the plot 🏷️",
-                        value=[],
+                        value="Show Names",
                         elem_id="value-select-4",
                         interactive=True,
                     )
@@ -224,7 +228,7 @@ with hf_app:
             with gr.Row():
                 with gr.Column():
                     # Output block for the plot
-                    plot_output = gr.Plot()
+                    plot_output = gr.Plot(initial_plot)
 
             """
             PLOT CHANGE ACTIONS
