@@ -201,6 +201,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     open_dip = plot_kwargs['open_dip']
     comm_dip = plot_kwargs['comm_dip']
     height = plot_kwargs['height']
+    width = plot_kwargs['width']
 
     mobile_view = True if plot_kwargs['mobile_view'] else False
 
@@ -317,7 +318,6 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
         benchmark_tick_texts = []
         for i in range(len(benchmark_tickvals)):
             benchmark_tick_texts.append(f"<br><br><b>{benchmark_ticks[benchmark_tickvals[i]]}</b>")
-
         fig.update_xaxes(
             tickvals=filtered_custom_tickvals + benchmark_tickvals,  # Use filtered_custom_tickvals
             ticktext=[f"{date.strftime('%b')}<br>{date.strftime('%y')}" for date in filtered_custom_tickvals] +
@@ -370,24 +370,29 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
                       )
                       )
 
+    if width:
+        print("Custom Seting the Width :")
+        fig.update_layout(width=width)
+
     if mobile_view:
-        if mobile_view:
-            fig.update_layout(
-                height=400,  # shorter plot for mobile
-                margin=dict(l=10, r=10, t=30, b=40),
-                font=dict(size=10),
-                xaxis=dict(tickfont=dict(size=7)),
-                yaxis=dict(tickfont=dict(size=7)),
-                title=dict(font=dict(size=13)),
-                legend=dict(font=dict(size=5),
-                            bgcolor='rgba(255,255,255,0.7)',  # semi-transparent white for mobile
-                            bordercolor='rgba(0,0,0,0.05)')
-            )
+        # Fix plot dimensions for a cleaner view
+        fig.update_layout(
+            height=400,  # shorter plot for mobile
+            margin=dict(l=10, r=10, t=30, b=40),
+            font=dict(size=5),
+            legend=dict(font=dict(size=7),
+                        bgcolor='rgba(255,255,255,0.7)',  # semi-transparent white for mobile
+                        bordercolor='rgba(0,0,0,0.05)'),
+            xaxis=dict(tickfont=dict(size=7)),
+            yaxis=dict(tickfont=dict(size=7)),
+            title=dict(font=dict(size=13)),
+
+        )
 
     return fig
 
 
-def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> go.Figure:
+def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False, custom_width: int = None) -> go.Figure:
     """Fetch and generate the final trend plot for all models.
 
     Args:
@@ -416,7 +421,7 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
     else:
         height = 1000
 
-    plot_kwargs = {'height': height, 'open_dip': 0, 'comm_dip': 0,
+    plot_kwargs = {'height': height, 'width': custom_width, 'open_dip': 0, 'comm_dip': 0,
                    'mobile_view': mobile_view}
 
     benchmark_ticks = {}

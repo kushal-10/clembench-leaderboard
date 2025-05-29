@@ -58,20 +58,10 @@ def select_version_df(name):
             return versions_data['dataframes'][i]
 
 
-def _initial_trend_plot():
-    # You can choose default values (matching what you want to show first)
-    return get_final_trend_plot("Text", mobile_view=False)
-
-
 """
 MAIN APPLICATION
 """
-hf_app = gr.Blocks(css="""
-#trend-plot-1, .gr-plot {
-    width: 100% !important;
-    max-width: 100vw !important;
-}
-""")
+hf_app = gr.Blocks()
 with hf_app:
     gr.HTML(TITLE)
     gr.Markdown(INTRODUCTION_TEXT, elem_classes="markdown-text")
@@ -376,8 +366,10 @@ with hf_app:
                     )
 
             with gr.Row():
-                trend_plot = gr.Plot(get_final_trend_plot("Text", mobile_view=False),
-                                     elem_id="trend-plot-1")
+                trend_plot = gr.Plot(get_final_trend_plot(benchmark="Text",
+                                                          mobile_view=False,
+                                                          custom_width=1200),
+                                     show_label=False)
 
             trend_select.change(
                 get_final_trend_plot,
@@ -447,8 +439,7 @@ with hf_app:
                 queue=True
             )
 
-    # Load the trend plot initially, to auto-adjust the width according to HF container
-    hf_app.load(_initial_trend_plot, None, trend_plot)
+    hf_app.load()
 hf_app.queue()
 
 # Add scheduler to auto-restart the HF space at every TIME interval and update every component each time
